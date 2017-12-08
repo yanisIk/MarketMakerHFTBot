@@ -1,0 +1,5 @@
+AVOID EVENT LISTENERS MEMORY LEAK:
+    After each listener has done its job, remove its event handler from emitter
+    emitter.removeListener({{EventName}}, eventHandlerFunction);
+
+    https://www.npmjs.com/package/ultron

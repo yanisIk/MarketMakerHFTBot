@@ -1,0 +1,14 @@
+{
+  "name": "marketmakerbot",
+  "version": "1.0.0",
+  "description": "Generic market maker HFT bot",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Yanis Ikene",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^8.0.57"
+  }
+}
