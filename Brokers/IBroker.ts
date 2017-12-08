@@ -1,7 +1,10 @@
+import { EventEmitter } from "events";
+
 /**
  * Manages all order operations with an exchange
+ * Emit events on order operation
  */
 
- interface IBroker {
-    
- }
+export default interface IBroker extends EventEmitter {
+
+}

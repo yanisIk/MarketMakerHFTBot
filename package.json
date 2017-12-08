@@ -9,6 +9,10 @@
   "author": "Yanis Ikene",
   "license": "ISC",
   "devDependencies": {
+    "@types/async": "^2.0.45",
     "@types/node": "^8.0.57"
+  },
+  "dependencies": {
+    "async": "^2.6.0"
   }
 }
