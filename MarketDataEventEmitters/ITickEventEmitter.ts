@@ -1,9 +1,14 @@
 import { EventEmitter } from "events";
+import Tick from "../Models/Tick";
 
 /**
  * Emits tick on subscribed markets
  */
 export default interface ITicksStream extends EventEmitter {
+
+    // Key: marketName, Value: tick
+    // Contains latest tick by marketName
+    ticks: Map<string, Tick>;
 
     /**
      * Subscribe to ticks and emit them

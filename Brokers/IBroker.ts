@@ -1,4 +1,6 @@
 import { EventEmitter } from "events";
+import Order from "../Models/Order";
+import Quote from "../Models/Quote";
 
 /**
  * Manages all order operations with an exchange
@@ -6,6 +8,10 @@ import { EventEmitter } from "events";
  */
 
 export default interface IBroker extends EventEmitter {
-    buyMarket(quote: Quote): Promise<Order>;
-    sellMarket(quote: Quote): Promise<Order>;
+
+    buy(quote: Quote): Promise<string>;
+    sell(quote: Quote): Promise<string>;
+    getOrder(orderId: string): Promise<Order>;
+    cancelOrder(orderId: string): Promise<any>;
+
 }

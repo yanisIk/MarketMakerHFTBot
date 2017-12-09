@@ -1,4 +1,7 @@
 import { EventEmitter } from "events";
+import IBroker from "../Brokers/IBroker";
+import IOrderEventEmitter from "../MarketDataEventEmitters/IOrderEventEmitter";
+import ITickEventEmitter from "../MarketDataEventEmitters/ITickEventEmitter";
 import Order, { OrderSide } from "../Models/Order";
 import Tick from "../Models/Tick";
 
@@ -15,10 +18,11 @@ type OrderListener = (order: Order) => void;
  */
 export default class OutBidDetector extends EventEmitter {
 
-    constructor(private openOrdersEmitter: EventEmitter,
-                private openCancelOrdersEmitter: EventEmitter,
-                private filledOrdersEmitter: EventEmitter,
-                private ticksEmitter: EventEmitter) {
+    public static readonly OUTBID_ORDER_EVENT: string = "OUTBID_ORDER_EVENT";
+
+    constructor(private openOrdersEmitter: IBroker,
+                private filledOrdersEmitter: IOrderEventEmitter,
+                private ticksEmitter: ITickEventEmitter) {
         super();
         this.startDetection();
     }
@@ -31,25 +35,25 @@ export default class OutBidDetector extends EventEmitter {
      *      - Stop monitoring
      */
     private startDetection(): void {
-        // Listen to open sell orders
+        // Listen to open buy orders
         this.openOrdersEmitter.on("OPEN_BUY_ORDER", (order: Order) => {
 
-            // For each sell order, compare its ask to latest tick ask
-            // If outask detected, emit it and remove listener
+            // For each buy order, compare its bid to latest tick bid
             let tickListener: TickListener;
             let canceledOrderListener: OrderListener;
             let filledOrderListener: OrderListener;
 
-            const cleanOrderListeners = () => {
-                this.ticksEmitter.removeListener("TICK", tickListener);
-                this.openCancelOrdersEmitter.removeListener("OPEN_CANCEL_ORDER", canceledOrderListener);
-                this.filledOrdersEmitter.removeListener("FILLED_ORDER", filledOrderListener);
+            const cleanListeners = () => {
+                this.ticksEmitter.removeListener(order.marketName, tickListener);
+                this.openOrdersEmitter.removeListener("OPEN_CANCEL_ORDER", canceledOrderListener);
+                this.filledOrdersEmitter.removeListener("FILLED_BUY_ORDER", filledOrderListener);
             };
 
+            // If outbid detected, emit it and remove listener
             tickListener = (tick: Tick) =>  {
                 if (tick.bid > order.rate) {
-                    this.emit("OUTBID_ORDER", order);
-                    cleanOrderListeners();
+                    cleanListeners();
+                    this.emit(OutBidDetector.OUTBID_ORDER_EVENT, order);
                 }
             };
 
@@ -57,7 +61,7 @@ export default class OutBidDetector extends EventEmitter {
             // If same, remove listeners;
             canceledOrderListener = (canceledOrder: Order) => {
                 if (canceledOrder.id === order.id) {
-                    cleanOrderListeners();
+                    cleanListeners();
                 }
             };
 
@@ -65,13 +69,13 @@ export default class OutBidDetector extends EventEmitter {
             // If same, remove listeners;
             filledOrderListener = (filledOrder: Order) => {
                 if (filledOrder.id === order.id) {
-                    cleanOrderListeners();
+                    cleanListeners();
                 }
             };
 
             // Begin to listen
-            this.ticksEmitter.on("TICK", tickListener);
-            this.openCancelOrdersEmitter.on("OPEN_CANCEL_ORDER", canceledOrderListener);
+            this.ticksEmitter.on(order.marketName, tickListener);
+            this.openOrdersEmitter.on("OPEN_CANCEL_ORDER", canceledOrderListener);
             this.filledOrdersEmitter.on("FILLED_ORDER", filledOrderListener);
 
         });

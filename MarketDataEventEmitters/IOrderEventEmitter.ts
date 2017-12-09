@@ -15,7 +15,7 @@ export default interface IOrdersStream extends EventEmitter {
      * Stops watching orders
      * Implementation is dependent on the exchanger adapter
      */
-    unsubscribe(): void;
+    unsubscribe(marketName: string): void;
 }
 
 export enum ORDER_EVENT_TYPE {

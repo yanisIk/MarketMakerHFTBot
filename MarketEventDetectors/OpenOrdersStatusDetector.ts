@@ -1,7 +1,7 @@
 import { EventEmitter } from "events";
+import { clearInterval, setInterval } from "timers";
 import IBroker from "./../Brokers/IBroker";
 import Order, { OrderSide, OrderStatus } from "./../Models/Order";
-import { setInterval, clearInterval } from "timers";
 
 /**
  * Subscribe to open orders
@@ -31,10 +31,13 @@ export default class OpenOrdersStatusDetector extends EventEmitter {
         this.openOrdersEmitter.on("OPEN_BUY_ORDER", (orderId: string) => {
 
             const intervalId = setInterval(async () => {
-                const updatedOrder: Order = await this.checkOrder(order);
+
+                const updatedOrder: Order = await this.broker.getOrder(orderId);
+
                 if (updatedOrder.status !== OrderStatus.OPEN) {
                     clearInterval(intervalId);
                 }
+
                 if (updatedOrder.status === OrderStatus.CANCELED) {
                     if (updatedOrder.side === OrderSide.BUY) {
                         this.emit(OpenOrdersStatusDetector.CANCELED_BUY_ORDER, updatedOrder);
@@ -56,20 +59,7 @@ export default class OpenOrdersStatusDetector extends EventEmitter {
             }, this.watchIntervalInMs);
 
         });
-    }
-
-    /**
-     * 
-     * @param order
-     */
-    private async checkOrder(orderId: string): Order {
 
     }
-}
 
-export enum ORDER_STATUS_EVENT_TYPE {
-    FILLED_BUY_ORDER,
-    FILLED_SELL_ORDER,
-    CANCELED_BUY_ORDER,
-    CANCELED_SELL_ORDER,
 }

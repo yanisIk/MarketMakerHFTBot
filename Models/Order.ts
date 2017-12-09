@@ -9,7 +9,11 @@ export default class Order {
                 public readonly quantity: number,
                 public readonly side: OrderSide,
                 public readonly type: OrderType,
-                public status: OrderStatus ) {
+                public readonly timeEffect: OrderTimeEffect,
+                public status: OrderStatus,
+                public readonly condition?: OrderCondition,
+                public readonly target?: number,
+                ) {
 
     }
 
@@ -45,4 +49,15 @@ export enum OrderStatus {
     PARTIALLY_FILLED,
     FILLED,
     CANCELED,
+}
+
+export enum OrderTimeEffect {
+    GOOD_UNTIL_CANCELED,
+    IMMEDIATE_OR_CANCEL,
+    FILL_OR_KILL,
+}
+
+export enum OrderCondition {
+    GREATER_THAN_OR_EQUAL,
+    LESS_THAN_OR_EQUAL,
 }

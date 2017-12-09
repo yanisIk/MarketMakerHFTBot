@@ -1,4 +1,7 @@
 import { EventEmitter } from "events";
+import IBroker from "../Brokers/IBroker";
+import IOrderEventEmitter from "../MarketDataEventEmitters/IOrderEventEmitter";
+import ITickEventEmitter from "../MarketDataEventEmitters/ITickEventEmitter";
 import Order, { OrderSide } from "../Models/Order";
 import Tick from "../Models/Tick";
 
@@ -15,10 +18,11 @@ type OrderListener = (order: Order) => void;
  */
 export default class OutAskDetector extends EventEmitter {
 
-    constructor(private openOrdersEmitter: EventEmitter,
-                private openCancelOrdersEmitter: EventEmitter,
-                private filledOrdersEmitter: EventEmitter,
-                private ticksEmitter: EventEmitter) {
+    public static readonly OUTASK_ORDER_EVENT: string = "OUTASK_ORDER_EVENT";
+
+    constructor(private openOrdersEmitter: IBroker,
+                private filledOrdersEmitter: IOrderEventEmitter,
+                private ticksEmitter: ITickEventEmitter) {
         super();
         this.startDetection();
     }
@@ -37,21 +41,21 @@ export default class OutAskDetector extends EventEmitter {
         this.openOrdersEmitter.on("OPEN_SELL_ORDER", (order: Order) => {
 
             // For each sell order, compare its ask to latest tick ask
-            // If outask detected, emit it and remove listener
             let tickListener: TickListener;
             let canceledOrderListener: OrderListener;
             let filledOrderListener: OrderListener;
 
-            const cleanOrderListeners = () => {
-                this.ticksEmitter.removeListener("TICK", tickListener);
-                this.openCancelOrdersEmitter.removeListener("OPEN_CANCEL_ORDER", canceledOrderListener);
+            const cleanListeners = () => {
+                this.ticksEmitter.removeListener(order.marketName, tickListener);
+                this.openOrdersEmitter.removeListener("OPEN_CANCEL_ORDER", canceledOrderListener);
                 this.filledOrdersEmitter.removeListener("FILLED_ORDER", filledOrderListener);
             };
 
+            // If outask detected, emit it and remove listener
             tickListener = (tick: Tick) =>  {
                 if (tick.bid > order.rate) {
-                    this.emit("OUTASK_ORDER", order);
-                    cleanOrderListeners();
+                    cleanListeners();
+                    this.emit(OutAskDetector.OUTASK_ORDER_EVENT, order);
                 }
             };
 
@@ -59,7 +63,7 @@ export default class OutAskDetector extends EventEmitter {
             // If same, remove listeners;
             canceledOrderListener = (canceledOrder: Order) => {
                 if (canceledOrder.id === order.id) {
-                    cleanOrderListeners();
+                    cleanListeners();
                 }
             };
 
@@ -67,13 +71,13 @@ export default class OutAskDetector extends EventEmitter {
             // If same, remove listeners;
             filledOrderListener = (filledOrder: Order) => {
                 if (filledOrder.id === order.id) {
-                    cleanOrderListeners();
+                    cleanListeners();
                 }
             };
 
             // Begin to listen
-            this.ticksEmitter.on("TICK", tickListener);
-            this.openCancelOrdersEmitter.on("OPEN_CANCEL_ORDER", canceledOrderListener);
+            this.ticksEmitter.on(order.marketName, tickListener);
+            this.openOrdersEmitter.on("OPEN_CANCEL_ORDER", canceledOrderListener);
             this.filledOrdersEmitter.on("FILLED_ORDER", filledOrderListener);
 
         });

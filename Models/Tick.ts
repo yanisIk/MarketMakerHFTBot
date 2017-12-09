@@ -1,11 +1,18 @@
 export default class Tick {
-    public spread: number;
 
-    constructor(public marketName: string,
-                public bid: number,
-                public ask: number,
-                public last: number,
-                public timestamp: number) {
-        this.spread = ask - bid;
+    constructor(public readonly marketName: string,
+                public readonly bid: number,
+                public readonly ask: number,
+                public readonly last: number,
+                public readonly timestamp?: number) {
+
+    }
+
+    public get spread(): number {
+        return this.ask - this.bid;
+    }
+
+    public get spreadPercentage(): number {
+        return (this.spread) / this.ask;
     }
 }
