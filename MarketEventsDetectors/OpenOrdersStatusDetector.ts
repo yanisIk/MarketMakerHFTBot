@@ -1,7 +1,7 @@
-import async from "async";
 import { EventEmitter } from "events";
 import IBroker from "./../Brokers/IBroker";
 import Order, { OrderSide, OrderStatus } from "./../Models/Order";
+import { setInterval, clearInterval } from "timers";
 
 /**
  * Subscribe to open orders
@@ -28,29 +28,32 @@ export default class OpenOrdersStatusDetector extends EventEmitter {
      * For each open order, check it every ${watchIntervalInMs}
      */
     private startWatch(): void {
-        this.openOrdersEmitter.on("OPEN_BUY_ORDER", (order: Order) => {
+        this.openOrdersEmitter.on("OPEN_BUY_ORDER", (orderId: string) => {
 
-            async.retry({times: 999999, interval: this.watchIntervalInMs}, async (): Promise<Order> => {
+            const intervalId = setInterval(async () => {
                 const updatedOrder: Order = await this.checkOrder(order);
-                if (updatedOrder.status === OrderStatus.OPEN) {
-                    return Promise.reject("ORDER STILL OPEN");
+                if (updatedOrder.status !== OrderStatus.OPEN) {
+                    clearInterval(intervalId);
                 }
-            }, (err, updatedOrder: Order) => {
-                if (updatedOrder.status === OrderStatus.CANCELED && updatedOrder.side === OrderSide.BUY) {
-                    this.emit(OpenOrdersStatusDetector.CANCELED_BUY_ORDER, updatedOrder);
+                if (updatedOrder.status === OrderStatus.CANCELED) {
+                    if (updatedOrder.side === OrderSide.BUY) {
+                        this.emit(OpenOrdersStatusDetector.CANCELED_BUY_ORDER, updatedOrder);
+                    }
+                    if (updatedOrder.side === OrderSide.SELL) {
+                        this.emit(OpenOrdersStatusDetector.CANCELED_SELL_ORDER, updatedOrder);
+                    }
                 }
-                if (updatedOrder.status === OrderStatus.CANCELED && updatedOrder.side === OrderSide.SELL) {
-                    this.emit(OpenOrdersStatusDetector.CANCELED_SELL_ORDER, updatedOrder);
+
+                if (updatedOrder.status === OrderStatus.FILLED ||
+                    updatedOrder.status === OrderStatus.PARTIALLY_FILLED) {
+                    if (updatedOrder.side === OrderSide.BUY) {
+                        this.emit(OpenOrdersStatusDetector.FILLED_BUY_ORDER, updatedOrder);
+                    }
+                    if (updatedOrder.side === OrderSide.SELL) {
+                        this.emit(OpenOrdersStatusDetector.FILLED_SELL_ORDER, updatedOrder);
+                    }
                 }
-                if ( (  updatedOrder.status === OrderStatus.FILLED ||
-                        updatedOrder.status === OrderStatus.PARTIALLY_FILLED) &&
-                        updatedOrder.side === OrderSide.BUY) {
-                    this.emit(OpenOrdersStatusDetector.FILLED_BUY_ORDER, updatedOrder);
-                }
-                if (updatedOrder.status === OrderStatus.CANCELED && updatedOrder.side === OrderSide.BUY) {
-                    this.emit(OpenOrdersStatusDetector.FILLED_SELL_ORDER, updatedOrder);
-                }
-            });
+            }, this.watchIntervalInMs);
 
         });
     }
@@ -59,7 +62,7 @@ export default class OpenOrdersStatusDetector extends EventEmitter {
      * 
      * @param order
      */
-    private async checkOrder(order: Order): Order {
+    private async checkOrder(orderId: string): Order {
 
     }
 }

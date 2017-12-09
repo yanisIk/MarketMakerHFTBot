@@ -12,7 +12,7 @@ export default interface IOrdersStream extends EventEmitter {
      */
     subscribe(marketName: string): void;
     /**
-     * Stops watching ticks
+     * Stops watching orders
      * Implementation is dependent on the exchanger adapter
      */
     unsubscribe(): void;

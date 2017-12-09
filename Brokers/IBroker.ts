@@ -6,5 +6,6 @@ import { EventEmitter } from "events";
  */
 
 export default interface IBroker extends EventEmitter {
-
+    buyMarket(quote: Quote): Promise<Order>;
+    sellMarket(quote: Quote): Promise<Order>;
 }
