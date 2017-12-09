@@ -1,0 +1,11 @@
+{
+    "BITTREX": {
+        "ORDER_WATCH_INTERVAL_IN_MS": 100,
+        "TICK_POLL_INTERVAL_IN_MS": 10,
+        "API_RATE_LIMIT": null
+    },
+    
+    
+    
+    "IS_LOG_ACTIVE": true
+}
