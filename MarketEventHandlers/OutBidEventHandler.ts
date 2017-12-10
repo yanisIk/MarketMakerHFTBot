@@ -48,7 +48,7 @@ export default class OutBidEventHandler {
 
     private generateOutBidQuote(order: Order, tick: Tick): Quote {
         const newBid = tick.bid + (tick.spread * 0.01);
-        return new Quote(order.marketName, newBid, order.quantity,
+        return new Quote(order.marketName, newBid, order.quantityRemaining,
                          OrderSide.BUY, OrderType.LIMIT, OrderTimeEffect.GOOD_UNTIL_CANCELED);
     }
 }

@@ -1,0 +1,70 @@
+{
+  "_from": "node-bittrex-api",
+  "_id": "node-bittrex-api@0.7.5",
+  "_inBundle": false,
+  "_integrity": "sha1-f/G9KIyFD6Kuz2YpQE9rwHA5GCU=",
+  "_location": "/node-bittrex-api",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "tag",
+    "registry": true,
+    "raw": "node-bittrex-api",
+    "name": "node-bittrex-api",
+    "escapedName": "node-bittrex-api",
+    "rawSpec": "",
+    "saveSpec": null,
+    "fetchSpec": "latest"
+  },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/node-bittrex-api/-/node-bittrex-api-0.7.5.tgz",
+  "_shasum": "7ff1bd288c850fa2aecf6629404f6bc070391825",
+  "_spec": "node-bittrex-api",
+  "_where": "C:\\Users\\Skini\\Documents\\workspace\\Bittrex-BTC-ETH-Arbitrage",
+  "author": {
+    "name": "David Parlevliet",
+    "url": " https://github.com/dparlevliet "
+  },
+  "bugs": {
+    "url": "https://github.com/dparlevliet/node.bittrex.api/issues",
+    "email": "david.parlevliet.github@gmail.com"
+  },
+  "bundleDependencies": false,
+  "contributors": [],
+  "dependencies": {
+    "cloudscraper": "^1.4.1",
+    "jsonic": "^0.3.0",
+    "object-assign": "^4.1.1",
+    "request": ">= 2.35.0",
+    "signalr-client": "0.0.17"
+  },
+  "deprecated": false,
+  "description": "Node Bittrex API - asynchronous node.js library for the Bittrex API https://bittrex.com/",
+  "devDependencies": {
+    "mocha": "^3.3.0"
+  },
+  "engines": {
+    "node": ">=0.10"
+  },
+  "homepage": "https://github.com/dparlevliet/node.bittrex.api",
+  "keywords": [
+    "btc",
+    "xbt",
+    "bitcoin",
+    "altcoin",
+    "bittrex"
+  ],
+  "license": "MIT",
+  "main": "node.bittrex.api.js",
+  "name": "node-bittrex-api",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dparlevliet/node.bittrex.api.git"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "version": "0.7.5"
+}

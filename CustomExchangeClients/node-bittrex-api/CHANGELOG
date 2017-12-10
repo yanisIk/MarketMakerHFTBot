@@ -1,0 +1,3 @@
+0.7.5
+  - Added ``tradebuy`` and ``tradesell`` methods which make use of the v2 api features that you will find on the Bittrex website such as IOC and FOK.
+  - Updated some areas of README.md with explainations and examples

@@ -13,6 +13,10 @@
     "@types/node": "^8.0.57"
   },
   "dependencies": {
-    "async": "^2.6.0"
+    "async": "^2.6.0",
+    "bluebird": "^3.5.1",
+    "cluster": "^0.7.7",
+    "dotenv-safe": "^4.0.4",
+    "lodash": "^4.17.4"
   }
 }

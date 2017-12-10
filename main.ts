@@ -1,67 +1,37 @@
 declare const global;
 
-import BittrexBroker from "./Brokers/BittrexBroker";
-import IBroker from "./Brokers/IBroker";
-
+import cluster from "cluster";
+import dotenv from "dotenv-safe";
+import _ from "lodash";
 import CONFIG from "./Config/CONFIG";
-global.CONFIG = CONFIG;
+import BittrexMarketMakerBot from "./Engines/BittrexMarketMakerBot";
 
-import BittrexTickEventEmitter from "./MarketDataEventEmitters/BittrexTickEventEmitter";
-import IOrderEventEmitter from "./MarketDataEventEmitters/IOrderEventEmitter";
-import ITickEventEmitter from "./MarketDataEventEmitters/ITickEventEmitter";
+dotenv.load();
 
-import OpenOrdersStatusDetector from "./MarketEventDetectors/OpenOrdersStatusDetector";
-import OutAskDetector from "./MarketEventDetectors/OutAskDetector";
-import OutBidDetector from "./MarketEventDetectors/OutBidDetector";
+const numWorkers: number = 1; // require('os').cpus().length;
+// USE MULTIPLE CORES
+if (cluster.isMaster) {
 
-import BuyFilledEventHandler from "./MarketEventHandlers/BuyFilledEventHandler";
-import OutAskEventHandler from "./MarketEventHandlers/OutAskEventHandler";
-import OutBidEventHandler from "./MarketEventHandlers/OutBidEventHandler";
-import SellFilledEventHandler from "./MarketEventHandlers/SellFilledEventHandler";
+    console.log('Master cluster setting up ' + numWorkers + ' worker(s)...');
 
-class MarketMakerBot {
+    async function prepareWorkers() {
 
-    private broker: IBroker;
-
-    private orderEmitter: IOrderEventEmitter;
-    private tickEmitter: ITickEventEmitter;
-
-    private openOrdersStatusDetector: OpenOrdersStatusDetector;
-    private outBidDetector: OutBidDetector;
-    private outAskDetector: OutAskDetector;
-
-    private outBidHandler: OutBidEventHandler;
-    private buyFilledHandler: BuyFilledEventHandler;
-    private outAskHandler: OutAskEventHandler;
-    private sellFilledHandler: SellFilledEventHandler;
-
-    constructor(public readonly marketName: string, private readonly exchangeName) {
-
+        for (let i = 0; i < numWorkers; i++) {
+            const worker = cluster.fork();
+            worker.send({workerId: i, marketName: CONFIG.BITTREX.MARKETS_TO_MONITOR[i]});
+        }
     }
 
-    /**
-     *
-     */
-    public setUpPipeline(): void {
+    prepareWorkers();
 
-        this.broker = new BittrexBroker();
+} else {
+    process.on("message", async (data) => {
+        global.WORKER_ID = data.workerId;
+        global.CONFIG = CONFIG;
 
-        this.tickEmitter = new BittrexTickEventEmitter();
+        console.log(`WORKER#${data.workerId} MONITORING ${data.marketName}`);
 
-        this.openOrdersStatusDetector = new OpenOrdersStatusDetector(this.broker,
-                                        CONFIG.BITTREX.ORDER_WATCH_INTERVAL_IN_MS);
-        this.outBidDetector = new OutBidDetector(this.broker, this.openOrdersStatusDetector, this.tickEmitter);
-        this.outAskDetector = new OutAskDetector(this.broker, this.openOrdersStatusDetector, this.tickEmitter);
-
-        this.outBidHandler = new OutBidEventHandler(this.tickEmitter, this.outBidDetector, this.broker);
-        this.buyFilledHandler = new BuyFilledEventHandler(this.openOrdersStatusDetector, this.tickEmitter, this.broker);
-        this.outAskHandler = new OutAskEventHandler(this.tickEmitter, this.outAskDetector, this.broker);
-        this.sellFilledHandler = new SellFilledEventHandler(this.openOrdersStatusDetector,
-                                                            this.tickEmitter, this.broker);
-
-    }
-
-    public start(): void {
-        // TODO FIRST BUY
-    }
+        const bittrexMarketMakerBot = new BittrexMarketMakerBot(data.marketName);
+        bittrexMarketMakerBot.start();
+    });
 }

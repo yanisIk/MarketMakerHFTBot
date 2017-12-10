@@ -1,17 +1,31 @@
-declare const CONFIG;
-
+import * as Bluebird from "bluebird";
 import { EventEmitter } from "events";
 import _ from "lodash";
 import Order from "../Models/Order";
 import Quote from "../Models/Quote";
 import Tick from "../Models/Tick";
+import CONFIG from "./../Config/CONFIG";
 import IBroker, { OPEN_ORDER_EVENTS } from "./IBroker";
+
+import * as bittrexClient from "./../CustomExchangeClients/node-bittrex-api";
+const bittrex = Bluebird.promisifyAll(bittrexClient);
+bittrex.options({
+    apikey : process.env.BITTREX_API_KEY,
+    apisecret : process.env.BITTREX_API_SECRET,
+    verbose : false,
+    inverse_callback_arguments : true,
+});
 
 export default class BittrexBroker extends EventEmitter implements IBroker {
 
     public readonly OPEN_CANCEL_ORDER_EVENT_EMITTER: EventEmitter = new EventEmitter();
     public readonly OPEN_BUY_ORDER_EVENT_EMITTER: EventEmitter = new EventEmitter();
     public readonly OPEN_SELL_ORDER_EVENT_EMITTER: EventEmitter = new EventEmitter();
+
+    public readonly openBuyOrders: Map<string, Order> = new Map();
+    public readonly openSellOrders: Map<string, Order> = new Map();
+    public readonly openBuyQuantity: Map<string, number> = new Map();
+    public readonly openSellQuantity: Map<string, number> = new Map();
 
     constructor() {
         super();
@@ -45,7 +59,7 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
         }
         const startBid = tick.bid - (tick.spread / 3);
         const endBid = tick.bid + (tick.spread / 1.50);
-        const bidRange = endBid - startBid; // = spread
+        const bidRange = endBid - startBid; // = new spread
         const bidStep = bidRange / chunks;
 
         const delaysInMs: number[] = [];
@@ -70,7 +84,7 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
             if (i !== chunks - 1) {
                 isSpam = true;
             }
-            quotes[i] = new Quote(quote.marketName, quote.rate, quote.quantity,
+            quotes[i] = new Quote(quote.marketName, bids[i], splittedQuantity,
                                   quote.side, quote.type, quote.timeEffect,
                                   isSpam, quote.condition, quote.target);
         }
@@ -90,7 +104,7 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
         }
         const startAsk = tick.ask + (tick.spread / 3);
         const endAsk = tick.ask - (tick.spread / 1.50);
-        const askRange = endAsk - startAsk; // = spread
+        const askRange = endAsk - startAsk; // = new spread
         const askStep = askRange / chunks;
 
         const delaysInMs: number[] = [];
@@ -115,7 +129,7 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
             if (i !== chunks - 1) {
                 isSpam = true;
             }
-            quotes[i] = new Quote(quote.marketName, quote.rate, quote.quantity,
+            quotes[i] = new Quote(quote.marketName, asks[i], splittedQuantity,
                                   quote.side, quote.type, quote.timeEffect,
                                   isSpam, quote.condition, quote.target);
         }
@@ -138,7 +152,7 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
     public async getOrder(orderId: string): Promise<Order> {
         // TODO
         let order = await Promise.resolve(null);
-        // update order object
+        // create Order object
         // order = new Order()
         return order;
     }

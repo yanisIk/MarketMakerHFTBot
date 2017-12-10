@@ -1,3 +1,5 @@
+declare const CONFIG;
+
 import { EventEmitter } from "events";
 import IBroker, { OPEN_ORDER_EVENTS } from "../Brokers/IBroker";
 import IOrderEventEmitter from "../MarketDataEventEmitters/IOrderEventEmitter";
@@ -44,7 +46,8 @@ export default class OutAskDetector extends EventEmitter {
             // Wait a little before starting monitoring, which will most probably lead to cancel spam orders
             if (order.isSpam) {
                 const SPAM_ORDER_MONITORING_DELAY_IN_MS = 500;
-                await new Promise((resolve, reject) => setTimeout(resolve, SPAM_ORDER_MONITORING_DELAY_IN_MS));
+                await new Promise((resolve, reject) =>
+                                    setTimeout(resolve, CONFIG.BITTREX.SPAM_ORDER_MONITORING_DELAY_IN_MS));
             }
 
             // For each sell order, compare its ask to latest tick ask

@@ -48,7 +48,7 @@ export default class OutAskEventHandler {
 
     private generateOutAskQuote(order: Order, tick: Tick): Quote {
         const newAsk = tick.ask - (tick.spread * 0.01);
-        return new Quote(order.marketName, newAsk, order.quantity,
+        return new Quote(order.marketName, newAsk, order.quantityRemaining,
                          OrderSide.SELL, OrderType.LIMIT, OrderTimeEffect.GOOD_UNTIL_CANCELED);
     }
 }

@@ -1,3 +1,5 @@
+declare const CONFIG;
+
 import { EventEmitter } from "events";
 import IBroker, { OPEN_ORDER_EVENTS } from "../Brokers/IBroker";
 import IOrderEventEmitter from "../MarketDataEventEmitters/IOrderEventEmitter";
@@ -40,7 +42,8 @@ export default class OutBidDetector extends EventEmitter {
         this.openOrdersEmitter.on(OPEN_ORDER_EVENTS.OPEN_BUY_ORDER_EVENT, async (order: Order) => {
 
             if (order.isSpam) {
-                await new Promise((resolve, reject) => setTimeout(resolve, CONFIG.BITTREX.SPAM_ORDER_MONITORING_DELAY_IN_MS));
+                await new Promise((resolve, reject) =>
+                                    setTimeout(resolve, CONFIG.BITTREX.SPAM_ORDER_MONITORING_DELAY_IN_MS));
             }
 
             // For each buy order, compare its bid to latest tick bid
