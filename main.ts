@@ -1,6 +1,12 @@
+declare const global;
+
 import BittrexBroker from "./Brokers/BittrexBroker";
 import IBroker from "./Brokers/IBroker";
 
+import CONFIG from "./Config/CONFIG";
+global.CONFIG = CONFIG;
+
+import BittrexTickEventEmitter from "./MarketDataEventEmitters/BittrexTickEventEmitter";
 import IOrderEventEmitter from "./MarketDataEventEmitters/IOrderEventEmitter";
 import ITickEventEmitter from "./MarketDataEventEmitters/ITickEventEmitter";
 
@@ -34,7 +40,7 @@ class MarketMakerBot {
     }
 
     /**
-     * 
+     *
      */
     public setUpPipeline(): void {
 
@@ -42,7 +48,20 @@ class MarketMakerBot {
 
         this.tickEmitter = new BittrexTickEventEmitter();
 
-        this.openOrdersStatusDetector = new OpenOrdersStatusDetector()
+        this.openOrdersStatusDetector = new OpenOrdersStatusDetector(this.broker,
+                                        CONFIG.BITTREX.ORDER_WATCH_INTERVAL_IN_MS);
+        this.outBidDetector = new OutBidDetector(this.broker, this.openOrdersStatusDetector, this.tickEmitter);
+        this.outAskDetector = new OutAskDetector(this.broker, this.openOrdersStatusDetector, this.tickEmitter);
 
+        this.outBidHandler = new OutBidEventHandler(this.tickEmitter, this.outBidDetector, this.broker);
+        this.buyFilledHandler = new BuyFilledEventHandler(this.openOrdersStatusDetector, this.tickEmitter, this.broker);
+        this.outAskHandler = new OutAskEventHandler(this.tickEmitter, this.outAskDetector, this.broker);
+        this.sellFilledHandler = new SellFilledEventHandler(this.openOrdersStatusDetector,
+                                                            this.tickEmitter, this.broker);
+
+    }
+
+    public start(): void {
+        // TODO FIRST BUY
     }
 }

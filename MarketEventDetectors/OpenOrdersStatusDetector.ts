@@ -1,6 +1,6 @@
 import { EventEmitter } from "events";
 import { clearInterval, setInterval } from "timers";
-import IBroker from "./../Brokers/IBroker";
+import IBroker, { OPEN_ORDER_EVENTS } from "./../Brokers/IBroker";
 import Order, { OrderSide, OrderStatus } from "./../Models/Order";
 
 /**
@@ -11,13 +11,12 @@ import Order, { OrderSide, OrderStatus } from "./../Models/Order";
  */
 export default class OpenOrdersStatusDetector extends EventEmitter {
 
-    public static readonly FILLED_BUY_ORDER: string = "FILLED_BUY_ORDER";
-    public static readonly CANCELED_BUY_ORDER: string = "CANCELED_BUY_ORDER";
-    public static readonly FILLED_SELL_ORDER: string = "FILLED_SELL_ORDER";
-    public static readonly CANCELED_SELL_ORDER: string = "CANCELED_SELL_ORDER";
+    public readonly FILLED_BUY_ORDER_EVENT_EMITTER: EventEmitter = new EventEmitter();
+    public readonly CANCELED_BUY_ORDER_EVENT_EMITTER: EventEmitter = new EventEmitter();
+    public readonly FILLED_SELL_ORDER_EVENT_EMITTER: EventEmitter = new EventEmitter();
+    public readonly CANCELED_SELL_ORDER_EVENT_EMITTER: EventEmitter = new EventEmitter();
 
-    constructor(private openOrdersEmitter: EventEmitter,
-                private broker: IBroker,
+    constructor(private broker: IBroker,
                 private watchIntervalInMs: number) {
         super();
         this.startWatch();
@@ -28,11 +27,11 @@ export default class OpenOrdersStatusDetector extends EventEmitter {
      * For each open order, check it every ${watchIntervalInMs}
      */
     private startWatch(): void {
-        this.openOrdersEmitter.on("OPEN_BUY_ORDER", (orderId: string) => {
+        this.broker.on(OPEN_ORDER_EVENTS.OPEN_BUY_ORDER_EVENT, (order: Order) => {
 
             const intervalId = setInterval(async () => {
 
-                const updatedOrder: Order = await this.broker.getOrder(orderId);
+                const updatedOrder: Order = await this.broker.getOrder(order.id);
 
                 if (updatedOrder.status !== OrderStatus.OPEN) {
                     clearInterval(intervalId);
@@ -40,20 +39,24 @@ export default class OpenOrdersStatusDetector extends EventEmitter {
 
                 if (updatedOrder.status === OrderStatus.CANCELED) {
                     if (updatedOrder.side === OrderSide.BUY) {
-                        this.emit(OpenOrdersStatusDetector.CANCELED_BUY_ORDER, updatedOrder);
+                        this.CANCELED_BUY_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
+                        this.emit(UPDATE_ORDER_STATUS_EVENTS.CANCELED_BUY_ORDER, updatedOrder);
                     }
                     if (updatedOrder.side === OrderSide.SELL) {
-                        this.emit(OpenOrdersStatusDetector.CANCELED_SELL_ORDER, updatedOrder);
+                        this.CANCELED_SELL_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
+                        this.emit(UPDATE_ORDER_STATUS_EVENTS.CANCELED_SELL_ORDER, updatedOrder);
                     }
                 }
 
                 if (updatedOrder.status === OrderStatus.FILLED ||
                     updatedOrder.status === OrderStatus.PARTIALLY_FILLED) {
                     if (updatedOrder.side === OrderSide.BUY) {
-                        this.emit(OpenOrdersStatusDetector.FILLED_BUY_ORDER, updatedOrder);
+                        this.FILLED_BUY_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
+                        this.emit(UPDATE_ORDER_STATUS_EVENTS.FILLED_BUY_ORDER, updatedOrder);
                     }
                     if (updatedOrder.side === OrderSide.SELL) {
-                        this.emit(OpenOrdersStatusDetector.FILLED_SELL_ORDER, updatedOrder);
+                        this.FILLED_SELL_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
+                        this.emit(UPDATE_ORDER_STATUS_EVENTS.FILLED_SELL_ORDER, updatedOrder);
                     }
                 }
             }, this.watchIntervalInMs);
@@ -63,3 +66,10 @@ export default class OpenOrdersStatusDetector extends EventEmitter {
     }
 
 }
+
+export const UPDATE_ORDER_STATUS_EVENTS = {
+    FILLED_BUY_ORDER: "FILLED_BUY_ORDER",
+    FILLED_SELL_ORDER: "FILLED_SELL_ORDER",
+    CANCELED_BUY_ORDER: "CANCELED_BUY_ORDER",
+    CANCELED_SELL_ORDER: "CANCELED_SELL_ORDER",
+};

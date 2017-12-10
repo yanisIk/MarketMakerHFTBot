@@ -8,6 +8,7 @@ export default class Quote {
                 public readonly side: OrderSide,
                 public readonly type: OrderType,
                 public readonly timeEffect: OrderTimeEffect,
+                public readonly isSpam: boolean = false,
                 public readonly condition?: OrderCondition,
                 public readonly target?: number) {
 

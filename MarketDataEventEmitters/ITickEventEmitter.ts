@@ -4,7 +4,7 @@ import Tick from "../Models/Tick";
 /**
  * Emits tick on subscribed markets
  */
-export default interface ITicksStream extends EventEmitter {
+export default interface ITickEventEmitter extends EventEmitter {
 
     // Key: marketName, Value: tick
     // Contains latest tick by marketName

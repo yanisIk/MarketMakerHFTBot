@@ -1,4 +1,14 @@
-export default class Order {
+import Quote from "./Quote";
+
+export default class Order extends Quote{
+
+    public static createFromQuote(quote: Quote, orderId: string): Order {
+        return new Order(orderId, Date.now(), quote.marketName,
+                         quote.rate, quote.quantity, quote.side,
+                         quote.type, quote.timeEffect, quote.isSpam,
+                         OrderStatus.OPEN, quote.condition, quote.target);
+    }
+
     public closedTimestamp: number;
     public quantityFilled: number;
 
@@ -10,11 +20,12 @@ export default class Order {
                 public readonly side: OrderSide,
                 public readonly type: OrderType,
                 public readonly timeEffect: OrderTimeEffect,
+                public readonly isSpam: boolean,
                 public status: OrderStatus,
                 public readonly condition?: OrderCondition,
                 public readonly target?: number,
                 ) {
-
+            super(marketName, rate, quantity, side, type, timeEffect, isSpam, condition, target);
     }
 
     public fill(quantityFilled: number, closeTimestamp: number) : void {

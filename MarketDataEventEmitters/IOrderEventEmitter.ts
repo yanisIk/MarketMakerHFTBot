@@ -5,7 +5,7 @@ import Order from "./../Models/Order";
  * Market orders stream for a market
  * Emits: "BUY_ORDER" and "SELL_ORDER"
  */
-export default interface IOrdersStream extends EventEmitter {
+export default interface IOrderEventEmitter extends EventEmitter {
     /**
      * Subscribe to orders and emit them
      * Implementation is dependent on the exchanger adapter

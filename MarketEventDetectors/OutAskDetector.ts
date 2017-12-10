@@ -1,9 +1,10 @@
 import { EventEmitter } from "events";
-import IBroker from "../Brokers/IBroker";
+import IBroker, { OPEN_ORDER_EVENTS } from "../Brokers/IBroker";
 import IOrderEventEmitter from "../MarketDataEventEmitters/IOrderEventEmitter";
 import ITickEventEmitter from "../MarketDataEventEmitters/ITickEventEmitter";
 import Order, { OrderSide } from "../Models/Order";
 import Tick from "../Models/Tick";
+import OpenOrdersStatusDetector, { UPDATE_ORDER_STATUS_EVENTS } from "./OpenOrdersStatusDetector";
 
 type TickListener = (tick: Tick) => void;
 type OrderListener = (order: Order) => void;
@@ -21,7 +22,7 @@ export default class OutAskDetector extends EventEmitter {
     public static readonly OUTASK_ORDER_EVENT: string = "OUTASK_ORDER_EVENT";
 
     constructor(private openOrdersEmitter: IBroker,
-                private filledOrdersEmitter: IOrderEventEmitter,
+                private filledOrdersEmitter: OpenOrdersStatusDetector,
                 private ticksEmitter: ITickEventEmitter) {
         super();
         this.startDetection();
@@ -38,7 +39,13 @@ export default class OutAskDetector extends EventEmitter {
      */
     private startDetection(): void {
         // Listen to open sell orders
-        this.openOrdersEmitter.on("OPEN_SELL_ORDER", (order: Order) => {
+        this.openOrdersEmitter.on(OPEN_ORDER_EVENTS.OPEN_SELL_ORDER_EVENT, async (order: Order) => {
+
+            // Wait a little before starting monitoring, which will most probably lead to cancel spam orders
+            if (order.isSpam) {
+                const SPAM_ORDER_MONITORING_DELAY_IN_MS = 500;
+                await new Promise((resolve, reject) => setTimeout(resolve, SPAM_ORDER_MONITORING_DELAY_IN_MS));
+            }
 
             // For each sell order, compare its ask to latest tick ask
             let tickListener: TickListener;
@@ -47,13 +54,13 @@ export default class OutAskDetector extends EventEmitter {
 
             const cleanListeners = () => {
                 this.ticksEmitter.removeListener(order.marketName, tickListener);
-                this.openOrdersEmitter.removeListener("OPEN_CANCEL_ORDER", canceledOrderListener);
-                this.filledOrdersEmitter.removeListener("FILLED_ORDER", filledOrderListener);
+                this.openOrdersEmitter.OPEN_CANCEL_ORDER_EVENT_EMITTER.removeListener(order.id, canceledOrderListener);
+                this.filledOrdersEmitter.FILLED_SELL_ORDER_EVENT_EMITTER.removeListener(order.id, filledOrderListener);
             };
 
             // If outask detected, emit it and remove listener
             tickListener = (tick: Tick) =>  {
-                if (tick.bid > order.rate) {
+                if (tick.ask < order.rate) {
                     cleanListeners();
                     this.emit(OutAskDetector.OUTASK_ORDER_EVENT, order);
                 }
@@ -62,23 +69,19 @@ export default class OutAskDetector extends EventEmitter {
             // For each canceled order, check if is same as actual monitored order
             // If same, remove listeners;
             canceledOrderListener = (canceledOrder: Order) => {
-                if (canceledOrder.id === order.id) {
-                    cleanListeners();
-                }
+                cleanListeners();
             };
 
             // For each filled order, check if is same as actual monitored order
             // If same, remove listeners;
             filledOrderListener = (filledOrder: Order) => {
-                if (filledOrder.id === order.id) {
-                    cleanListeners();
-                }
+                cleanListeners();
             };
 
             // Begin to listen
             this.ticksEmitter.on(order.marketName, tickListener);
-            this.openOrdersEmitter.on("OPEN_CANCEL_ORDER", canceledOrderListener);
-            this.filledOrdersEmitter.on("FILLED_ORDER", filledOrderListener);
+            this.openOrdersEmitter.OPEN_CANCEL_ORDER_EVENT_EMITTER.on(order.id, canceledOrderListener);
+            this.filledOrdersEmitter.FILLED_SELL_ORDER_EVENT_EMITTER.on(order.id, filledOrderListener);
 
         });
     }
