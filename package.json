@@ -4,23 +4,25 @@
   "description": "Generic market maker HFT bot",
   "main": "main.js",
   "scripts": {
-    "start": "tsc main.ts --target ES6",
+    "build": "tsc",
+    "start": "npm run build && node dist/main.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Yanis Ikene",
   "license": "ISC",
   "devDependencies": {
     "@types/async": "^2.0.45",
-    "@types/node": "^8.0.57"
-  },
-  "dependencies": {
     "@types/bluebird": "^3.5.18",
     "@types/dotenv-safe": "^4.0.1",
     "@types/lodash": "^4.14.88",
+    "@types/node": "^8.0.57"
+  },
+  "dependencies": {
     "async": "^2.6.0",
     "bluebird": "^3.5.1",
     "cluster": "^0.7.7",
     "dotenv-safe": "^4.0.4",
-    "lodash": "^4.17.4"
+    "lodash": "^4.17.4",
+    "node-bittrex-api": "^0.8.1"
   }
 }

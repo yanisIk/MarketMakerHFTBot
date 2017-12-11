@@ -43,6 +43,10 @@ export default class OutAskEventHandler {
 
             await cancelOrderPromise;
             this.tickEventEmitter.on(order.marketName, tickListener);
+
+            if (CONFIG.BITTREX.IS_LOG_ACTIVE) {
+                console.log(`--- OUTASK DETECTED --- \nOrderID: ${order.id}\nSide:${order.side} Rate:${order.rate}\n`);
+            }
         });
     }
 

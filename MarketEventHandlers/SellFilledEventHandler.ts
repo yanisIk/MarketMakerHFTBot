@@ -61,7 +61,7 @@ export default class SellFilledEventHandler {
     }
 
     private generateOutBidQuote(order: Order, tick: Tick): Quote {
-        const newBid = tick.bid + (tick.spread * 0.01);
+        const newBid = tick.bid + (tick.spread * 0.05);
         return new Quote(order.marketName, newBid, order.quantityFilled,
                          OrderSide.BUY, OrderType.LIMIT, OrderTimeEffect.GOOD_UNTIL_CANCELED);
     }

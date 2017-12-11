@@ -46,6 +46,10 @@ export default class BuyFilledEventHandler {
         };
 
         this.tickEventEmitter.on(order.marketName, tickListener);
+
+        if (CONFIG.BITTREX.IS_LOG_ACTIVE) {
+            console.log(`--- FILLED BUY ORDER --- \n${order.quantityFilled} @ ${order.rate}\n`);
+        }
     }
 
     private handlePartiallyFilledBuyOrder(order: Order) {
@@ -64,10 +68,14 @@ export default class BuyFilledEventHandler {
         };
 
         this.tickEventEmitter.on(order.marketName, tickListener);
+
+        if (CONFIG.BITTREX.IS_LOG_ACTIVE) {
+            console.log(`--- PARTIALLY FILLED BUY ORDER --- \n${order.quantityFilled} @ ${order.rate} (${order.quantityRemaining} remaining)\n`);
+        }
     }
 
     private generateOutAskQuote(order: Order, tick: Tick): Quote {
-        const newAsk = tick.ask - (tick.spread * 0.01);
+        const newAsk = tick.ask - (tick.spread * 0.05);
         return new Quote(order.marketName, newAsk, order.quantityFilled,
                          OrderSide.SELL, OrderType.LIMIT, OrderTimeEffect.GOOD_UNTIL_CANCELED);
     }

@@ -7,7 +7,7 @@ import Tick from "../Models/Tick";
 import * as CONFIG from "./../Config/CONFIG";
 import IBroker, { OPEN_ORDER_EVENTS } from "./IBroker";
 
-const bittrexClient = require("./../CustomExchangeClients/node-bittrex-api");
+const bittrexClient = require("node-bittrex-api");
 const bittrex = Bluebird.promisifyAll(bittrexClient);
 bittrex.options({
     apikey : process.env.BITTREX_API_KEY,
@@ -32,32 +32,40 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
     }
 
     public async buy(quote: Quote): Promise<Order> {
-        const buyResponse = await bittrex.tradebuyAsync(this.transformQuote(quote));
-        if (!buyResponse.success) {
-            throw new Error(buyResponse.message);
+        try {
+            const buyResponse = await bittrex.tradebuyAsync(this.transformQuote(quote));
+            if (!buyResponse.success) {
+                throw new Error(buyResponse.message);
+            }
+            const order = Order.createFromQuote(quote, buyResponse.result.OrderId);
+            this.OPEN_BUY_ORDER_EVENT_EMITTER.emit(order.id, order);
+            this.emit(OPEN_ORDER_EVENTS.OPEN_BUY_ORDER_EVENT, order);
+            return order;
+        } catch (err) {
+            console.error(`\n!!! Error in BittrexBroker.buy() !!!`);
+            console.error(err);
         }
-        buyResponse.isSpam = quote.isSpam;
-        const order = Order.createFromQuote(quote, buyResponse.uuid);
-        this.OPEN_BUY_ORDER_EVENT_EMITTER.emit(order.id, order);
-        this.emit(OPEN_ORDER_EVENTS.OPEN_BUY_ORDER_EVENT, order);
-        return order;
     }
 
     public async sell(quote: Quote): Promise<Order> {
-        const sellResponse = await bittrex.tradesellAsync(this.transformQuote(quote));
-        if (!sellResponse.success) {
-            throw new Error(sellResponse.message);
+        try {
+            const sellResponse = await bittrex.tradesellAsync(this.transformQuote(quote));
+            if (!sellResponse.success) {
+                throw new Error(sellResponse.message);
+            }
+            const order = Order.createFromQuote(quote, sellResponse.result.OrderId);
+            this.OPEN_SELL_ORDER_EVENT_EMITTER.emit(order.id, order);
+            this.emit(OPEN_ORDER_EVENTS.OPEN_SELL_ORDER_EVENT, order);
+            return order;
+        } catch (err) {
+            console.error(`\n!!! Error in BittrexBroker.sell() !!!`);
+            console.error(err);
         }
-        sellResponse.isSpam = quote.isSpam;
-        const order = Order.createFromQuote(quote, sellResponse.uuid);
-        this.OPEN_SELL_ORDER_EVENT_EMITTER.emit(order.id, order);
-        this.emit(OPEN_ORDER_EVENTS.OPEN_SELL_ORDER_EVENT, Order.createFromQuote(quote, sellResponse.uuid));
-        return order;
     }
 
     public spamBuy(quote: Quote, tick: Tick, chunks: number = 13, delayInMs: number): void {
-        let splittedQuantity: number = CONFIG.BITTREX.MIN_QTY_TO_TRADE[quote.marketName];
-        if (quote.quantity / chunks >= CONFIG.BITTREX.MIN_QTY_TO_TRADE[quote.marketName]) {
+        let splittedQuantity: number = CONFIG.BITTREX.MIN_QTY_TO_TRADE[quote.marketName] * 6;
+        if (quote.quantity / chunks >= CONFIG.BITTREX.MIN_QTY_TO_TRADE[quote.marketName] * 6) {
             splittedQuantity = quote.quantity / chunks;
         }
         const startBid = tick.bid - (tick.spread / 3);
@@ -100,8 +108,8 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
     }
 
     public spamSell(quote: Quote, tick: Tick, chunks: number = 13, delayInMs: number): void {
-        let splittedQuantity: number = CONFIG.BITTREX.MIN_QTY_TO_TRADE[quote.marketName];
-        if (quote.quantity / chunks >= CONFIG.BITTREX.MIN_QTY_TO_TRADE[quote.marketName]) {
+        let splittedQuantity: number = CONFIG.BITTREX.MIN_QTY_TO_TRADE[quote.marketName] * 6;
+        if (quote.quantity / chunks >= CONFIG.BITTREX.MIN_QTY_TO_TRADE[quote.marketName] * 6) {
             splittedQuantity = quote.quantity / chunks;
         }
         const startAsk = tick.ask + (tick.spread / 3);
@@ -146,85 +154,93 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
 
 
     public async cancelOrder(orderId: string): Promise<string> {
-        // TODO
-        const cancelResponse = await bittrex.cancelAsync({uuid: orderId});
-        if (!cancelResponse.success) {
-            throw new Error(cancelResponse.message);
+        try {
+            const cancelResponse = await bittrex.cancelAsync({uuid: orderId});
+            if (!cancelResponse.success) {
+                throw new Error(cancelResponse.message);
+            }
+            this.OPEN_CANCEL_ORDER_EVENT_EMITTER.emit(orderId, orderId);
+            this.emit(OPEN_ORDER_EVENTS.OPEN_CANCEL_ORDER_EVENT, orderId);
+            return orderId;
+        } catch (err) {
+            console.error(`\n!!! Error om BittrexBroker.cancelOrder() !!!`);
+            console.error(err);
         }
-        this.OPEN_CANCEL_ORDER_EVENT_EMITTER.emit(orderId, orderId);
-        this.emit(OPEN_ORDER_EVENTS.OPEN_CANCEL_ORDER_EVENT, orderId);
-        return orderId;
     }
 
     public async getOrder(orderId: string): Promise<Order> {
-        // TODO
-        const orderResponse = await bittrex.getorderAsync({uuid: orderId});
-        if (!orderResponse.success) {
-            throw new Error(orderResponse.message);
-        }
-        const order = orderResponse.result;
-        // create Order object
-        let orderSide: OrderSide;
-        let orderType: OrderType;
-        switch (order.Type) {
-            case "LIMIT_BUY" : {
-                orderSide = OrderSide.BUY;
-                orderType = OrderType.LIMIT;
+        try {
+            const orderResponse = await bittrex.getorderAsync({uuid: orderId});
+            if (!orderResponse.success) {
+                throw new Error(orderResponse.message);
             }
-            case "LIMIT_SELL" : {
-                orderSide = OrderSide.SELL;
-                orderType = OrderType.LIMIT;
-            }
-            case "CONDITIONAL_BUY" : {
-                orderSide = OrderSide.BUY;
-                orderType = OrderType.CONDITIONAL;
-            }
-            case "CONDITIONAL_SELL" : {
-                orderSide = OrderSide.SELL;
-                orderType = OrderType.CONDITIONAL;
-            }
-        }
-        let timeInEffect: OrderTimeEffect = OrderTimeEffect.GOOD_UNTIL_CANCELED;
-        if (order.ImmediateOrCancel) {
-            timeInEffect = OrderTimeEffect.IMMEDIATE_OR_CANCEL;
-        }
-        let orderStatus: OrderStatus = OrderStatus.OPEN;
-        if (order.CancelInitiated) {
-            orderStatus = OrderStatus.CANCELED;
-        }
-        if (order.Quantity !== order.QuantityRemaining) {
-            if (order.QuantityRemaining > 0) {
-                orderStatus = OrderStatus.PARTIALLY_FILLED;
-            } else {
-                orderStatus = OrderStatus.FILLED;
-            }
-        }
-        let orderCondition: OrderCondition;
-        if (order.IsConditional) {
-            switch (order.Condition) {
-                case "GREATER_THAN_OR_EQUAL" : {
-                    orderCondition = OrderCondition.GREATER_THAN_OR_EQUAL;
-                    break;
+            const order = orderResponse.result;
+            // create Order object
+            let orderSide: OrderSide;
+            let orderType: OrderType;
+            switch (order.Type) {
+                case "LIMIT_BUY" : {
+                    orderSide = OrderSide.BUY;
+                    orderType = OrderType.LIMIT;
                 }
-                case "LESS_THAN_OR_EQUAL" : {
-                    orderCondition = OrderCondition.LESS_THAN_OR_EQUAL;
-                    break;
+                case "LIMIT_SELL" : {
+                    orderSide = OrderSide.SELL;
+                    orderType = OrderType.LIMIT;
+                }
+                case "CONDITIONAL_BUY" : {
+                    orderSide = OrderSide.BUY;
+                    orderType = OrderType.CONDITIONAL;
+                }
+                case "CONDITIONAL_SELL" : {
+                    orderSide = OrderSide.SELL;
+                    orderType = OrderType.CONDITIONAL;
                 }
             }
+            let timeInEffect: OrderTimeEffect = OrderTimeEffect.GOOD_UNTIL_CANCELED;
+            if (order.ImmediateOrCancel) {
+                timeInEffect = OrderTimeEffect.IMMEDIATE_OR_CANCEL;
+            }
+            let orderStatus: OrderStatus = OrderStatus.OPEN;
+            if (order.CancelInitiated) {
+                orderStatus = OrderStatus.CANCELED;
+            }
+            if (order.Quantity !== order.QuantityRemaining) {
+                if (order.QuantityRemaining > 0) {
+                    orderStatus = OrderStatus.PARTIALLY_FILLED;
+                } else {
+                    orderStatus = OrderStatus.FILLED;
+                }
+            }
+            let orderCondition: OrderCondition;
+            if (order.IsConditional) {
+                switch (order.Condition) {
+                    case "GREATER_THAN_OR_EQUAL" : {
+                        orderCondition = OrderCondition.GREATER_THAN_OR_EQUAL;
+                        break;
+                    }
+                    case "LESS_THAN_OR_EQUAL" : {
+                        orderCondition = OrderCondition.LESS_THAN_OR_EQUAL;
+                        break;
+                    }
+                }
+            }
+            const orderObject = new Order(order.OrderUuid, order.Opened,
+                                          order.Exchange, order.Limit,
+                                          order.Quantity, orderSide,
+                                          orderType, timeInEffect,
+                                          false, orderStatus,
+                                          orderCondition, order.ConditionTarget);
+            if (orderStatus === OrderStatus.CANCELED) {
+                orderObject.cancel(order.Closed);
+            }
+            if (orderStatus !== (OrderStatus.OPEN || OrderStatus.CANCELED)) {
+                orderObject.fill(order.Quantity - order.QuantityRemaining, order.Closed);
+            }
+            return orderObject;
+        } catch (err) {
+            console.error(`\n!!! Error in BittrexBroker.getOrder() !!!`);
+            console.error(err);
         }
-        const orderObject = new Order(order.OrderUuid, order.Opened,
-                                      order.Exchange, order.Limit,
-                                      order.Quantity, orderSide,
-                                      orderType, timeInEffect,
-                                      false, orderStatus,
-                                      orderCondition, order.ConditionTarget);
-        if (orderStatus === OrderStatus.CANCELED) {
-            orderObject.cancel(order.Closed);
-        }
-        if (orderStatus !== (OrderStatus.OPEN || OrderStatus.CANCELED)) {
-            orderObject.fill(order.Quantity - order.QuantityRemaining, order.Closed);
-        }
-        return orderObject;
     }
 
     /**
@@ -288,7 +304,7 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
             // supported options are 'IMMEDIATE_OR_CANCEL', 'GOOD_TIL_CANCELLED', 'FILL_OR_KILL'
             TimeInEffect: timeInEffect,
             ConditionType: conditionType, // supported options are 'NONE', 'GREATER_THAN', 'LESS_THAN'
-            Target: quote.target, // used in conjunction with ConditionType
+            Target: quote.target ? quote.target : 0, // used in conjunction with ConditionType
         };
 
     }

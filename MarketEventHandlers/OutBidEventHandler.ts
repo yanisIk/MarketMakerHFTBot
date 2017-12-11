@@ -43,11 +43,15 @@ export default class OutBidEventHandler {
 
             await cancelOrderPromise;
             this.tickEventEmitter.on(order.marketName, tickListener);
+
+            if (CONFIG.BITTREX.IS_LOG_ACTIVE) {
+                console.log(`--- OUTBID DETECTED --- \nOrderID: ${order.id}\nSide:${order.side} Rate:${order.rate}\n`);
+            }
         });
     }
 
     private generateOutBidQuote(order: Order, tick: Tick): Quote {
-        const newBid = tick.bid + (tick.spread * 0.01);
+        const newBid = tick.bid + (tick.spread * 0.05);
         return new Quote(order.marketName, newBid, order.quantityRemaining,
                          OrderSide.BUY, OrderType.LIMIT, OrderTimeEffect.GOOD_UNTIL_CANCELED);
     }

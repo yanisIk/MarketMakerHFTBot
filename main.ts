@@ -31,7 +31,11 @@ if (cluster.isMaster) {
 
         console.log(`WORKER#${data.workerId} MONITORING ${data.marketName}`);
 
-        const bittrexMarketMakerBot = new BittrexMarketMakerBot(data.marketName);
-        bittrexMarketMakerBot.start();
+        try {
+            const bittrexMarketMakerBot = new BittrexMarketMakerBot(data.marketName);
+            bittrexMarketMakerBot.start();
+        } catch (err) {
+            console.error(err);
+        }
     });
 }

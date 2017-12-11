@@ -3,3 +3,12 @@ AVOID EVENT LISTENERS MEMORY LEAK:
     emitter.removeListener({{EventName}}, eventHandlerFunction);
 
     https://www.npmjs.com/package/ultron
+
+BUY ORDER:
+{ OrderId: '583a3298-8cd7-41f9-a08c-a675b42d3917',
+  MarketName: 'BTC-ETH',
+  MarketCurrency: 'ETH',
+  BuyOrSell: 'Buy',
+  OrderType: 'LIMIT',
+  Quantity: 0.03393666,
+  Rate: 0.027986925 }

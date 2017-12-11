@@ -1,6 +1,6 @@
 import { EventEmitter } from "events";
-import { clearInterval, setInterval } from "timers";
 import IBroker, { OPEN_ORDER_EVENTS } from "./../Brokers/IBroker";
+import * as CONFIG from "./../Config/CONFIG";
 import Order, { OrderSide, OrderStatus } from "./../Models/Order";
 
 /**
@@ -36,8 +36,15 @@ export default class OpenOrdersStatusDetector extends EventEmitter {
     }
 
     private handleOpenOrder(order: Order) {
-        const intervalId = setInterval(async () => {
+        if (CONFIG.BITTREX.IS_LOG_ACTIVE) {
+            console.log(`\n--- NEW OPEN ORDER --- \nOrderID: ${order.id}\nSide:${order.side} Rate:${order.rate}\n`);
+        }
+        let intervalId;
+        intervalId = setInterval(() => this.checkOrder(order, intervalId), this.watchIntervalInMs);
+    }
 
+    private async checkOrder(order: Order, intervalId: any) {
+        try {
             const updatedOrder: Order = await this.broker.getOrder(order.id);
 
             if (updatedOrder.status !== OrderStatus.OPEN) {
@@ -76,7 +83,11 @@ export default class OpenOrdersStatusDetector extends EventEmitter {
                     this.emit(UPDATE_ORDER_STATUS_EVENTS.PARTIALLY_FILLED_SELL_ORDER, updatedOrder);
                 }
             }
-        }, this.watchIntervalInMs);
+        } catch (err) {
+            clearInterval(intervalId);
+            console.error(`!!! Error in handleOpenOrder() !!!`);
+            console.error(err);
+        }
     }
 
 }

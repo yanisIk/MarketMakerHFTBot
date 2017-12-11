@@ -34,7 +34,7 @@ export default class BittrexMarketMakerBot {
     private sellFilledHandler: SellFilledEventHandler;
 
     constructor(public readonly marketName: string) {
-
+        this.setUpPipeline();
     }
 
     /**
@@ -62,30 +62,36 @@ export default class BittrexMarketMakerBot {
 
     public start(): void {
 
-        return;
+        // return;
 
-        // let startQuantity = 0;
-        // if (this.marketName.split("-")[0] === "BTC") {
-        //     startQuantity = CONFIG.BITTREX.START_BTC_QUANTITY;
-        // }
+        let startQuantity = 0;
+        if (this.marketName.split("-")[0] === "BTC") {
+            startQuantity = CONFIG.BITTREX.MIN_QTY_TO_TRADE[this.marketName] * 6;
+        }
 
-        // if (startQuantity === 0) {
-        //     throw new Error("NO START QUANTITY FOR " + this.marketName);
-        // }
+        if (!startQuantity) {
+            throw new Error("NO START QUANTITY FOR " + this.marketName);
+        }
 
-        // // 1st outbid
-        // let tickListener: (tick: Tick) => void;
-        // tickListener = (tick: Tick): void => {
-        //     // Clean listener
-        //     this.tickEmitter.removeListener(this.marketName, tickListener);
-        //     // Generate outBid quote
-        //     const newBid = tick.bid + (tick.spread * 0.01);
-        //     const outBidQuote = new Quote(this.marketName, newBid, startQuantity,
-        //                                 OrderSide.BUY, OrderType.LIMIT, OrderTimeEffect.GOOD_UNTIL_CANCELED);
-        //     // Sell
-        //     this.broker.buy(outBidQuote);
-        // };
-        // this.tickEmitter.on(this.marketName, tickListener);
+        
+        let x = 0;
+        // 1st outbid
+        let tickListener: (tick: Tick) => void;
+        tickListener = (tick: Tick): void => {
+            console.log("FIRST TICK", tick);
+            // Clean listener
+            this.tickEmitter.removeListener(this.marketName, tickListener);
+            // Generate outBid quote
+            const newBid: number = tick.bid + (tick.spread * 0.05);
+            const outBidQuote = new Quote(this.marketName, newBid, startQuantity,
+                                        OrderSide.BUY, OrderType.LIMIT, OrderTimeEffect.GOOD_UNTIL_CANCELED);
+            console.log("FIRST QUOTE", outBidQuote);
+            // Buy
+            this.broker.buy(outBidQuote);
+            x++;
+            console.log('!!!!!!!!!!!!!---------', x, 'BUY ----------!!!!!!!!!!!!!!');
+        };
+        this.tickEmitter.on(this.marketName, tickListener);
 
     }
 }
