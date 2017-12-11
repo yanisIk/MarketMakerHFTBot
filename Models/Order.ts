@@ -1,6 +1,6 @@
 import Quote from "./Quote";
 
-export default class Order extends Quote{
+export default class Order extends Quote {
 
     public static createFromQuote(quote: Quote, orderId: string): Order {
         return new Order(orderId, Date.now(), quote.marketName,
@@ -9,12 +9,12 @@ export default class Order extends Quote{
                          OrderStatus.OPEN, quote.condition, quote.target);
     }
 
-    public closedTimestamp: number;
+    public closedTimestamp: number | Date;
     public quantityFilled: number;
     public quantityRemaining: number;
 
     constructor(public readonly id: string,
-                public readonly openedTimestamp: number,
+                public readonly openedTimestamp: number | Date,
                 public readonly marketName: string,
                 public readonly rate: number,
                 public readonly quantity: number,

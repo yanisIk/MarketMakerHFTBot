@@ -1,0 +1,11 @@
+"use strict";
+exports.__esModule = true;
+exports.BITTREX = {
+    MARKETS_TO_MONITOR: ["BTC-ETH", "BTC-BCH", "BTC-NEO"],
+    START_BTC_QUANTITY: 0.0003,
+    ORDER_WATCH_INTERVAL_IN_MS: 100,
+    TICK_POLL_INTERVAL_IN_MS: 10,
+    SPAM_ORDER_MONITORING_DELAY_IN_MS: 500,
+    API_RATE_LIMIT: null,
+    IS_LOG_ACTIVE: true
+};

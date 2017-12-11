@@ -14,7 +14,6 @@ bittrex.options({
     inverse_callback_arguments : true,
 });
 
-
 export default class BittrexTickEventEmitter extends EventEmitter implements ITickEventEmitter {
 
     public readonly ticks: Map<string, Tick> = new Map();
@@ -24,7 +23,6 @@ export default class BittrexTickEventEmitter extends EventEmitter implements ITi
 
     constructor() {
         super();
-        // TODO
     }
 
     /**
@@ -43,7 +41,7 @@ export default class BittrexTickEventEmitter extends EventEmitter implements ITi
         clearInterval(this.pollingIntervalIds.get(marketName));
     }
 
-    private async getTicker(marketName: string): Tick {
+    private async getTicker(marketName: string): Promise<Tick> {
         const ticker = await bittrex.gettickerAsync({market: marketName})
         if (!ticker.result) {
             throw new Error(ticker.message);

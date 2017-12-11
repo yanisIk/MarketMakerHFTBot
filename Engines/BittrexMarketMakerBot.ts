@@ -64,7 +64,9 @@ export default class BittrexMarketMakerBot {
     }
 
     public start(): void {
-        // TODO FIRST BUY
+
+        return;
+
         let startQuantity = 0;
         if (this.marketName.split("-")[0] === "BTC") {
             startQuantity = CONFIG.BITTREX.START_BTC_QUANTITY;

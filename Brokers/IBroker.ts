@@ -30,6 +30,7 @@ export default interface IBroker extends EventEmitter {
     spamSell(quote: Quote, tick: Tick, chunks: number, delayInMs: number): void;
     cancelOrder(orderId: string): Promise<string>;
     getOrder(orderId: string): Promise<Order>;
+    transformQuote(quote: Quote): any;
 
 }
 
