@@ -1,13 +1,13 @@
 import * as Bluebird from "bluebird";
 import { EventEmitter } from "events";
-import _ from "lodash";
+import * as _ from "lodash";
 import Order, {OrderCondition, OrderSide, OrderStatus, OrderTimeEffect, OrderType} from "../Models/Order";
 import Quote from "../Models/Quote";
 import Tick from "../Models/Tick";
-import CONFIG from "./../Config/CONFIG";
+import * as CONFIG from "./../Config/CONFIG";
 import IBroker, { OPEN_ORDER_EVENTS } from "./IBroker";
 
-import * as bittrexClient from "./../CustomExchangeClients/node-bittrex-api";
+const bittrexClient = require("./../CustomExchangeClients/node-bittrex-api");
 const bittrex = Bluebird.promisifyAll(bittrexClient);
 bittrex.options({
     apikey : process.env.BITTREX_API_KEY,
@@ -56,9 +56,8 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
     }
 
     public spamBuy(quote: Quote, tick: Tick, chunks: number = 13, delayInMs: number): void {
-        // TODO
-        let splittedQuantity: number = CONFIG.MIN_QTY_TO_TRADE[quote.marketName];
-        if (quote.quantity / chunks >= CONFIG.MIN_QTY_TO_TRADE[quote.marketName]) {
+        let splittedQuantity: number = CONFIG.BITTREX.MIN_QTY_TO_TRADE[quote.marketName];
+        if (quote.quantity / chunks >= CONFIG.BITTREX.MIN_QTY_TO_TRADE[quote.marketName]) {
             splittedQuantity = quote.quantity / chunks;
         }
         const startBid = tick.bid - (tick.spread / 3);
@@ -101,9 +100,8 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
     }
 
     public spamSell(quote: Quote, tick: Tick, chunks: number = 13, delayInMs: number): void {
-        // TODO
-        let splittedQuantity: number = CONFIG.MIN_QTY_TO_TRADE[quote.marketName];
-        if (quote.quantity / chunks >= CONFIG.MIN_QTY_TO_TRADE[quote.marketName]) {
+        let splittedQuantity: number = CONFIG.BITTREX.MIN_QTY_TO_TRADE[quote.marketName];
+        if (quote.quantity / chunks >= CONFIG.BITTREX.MIN_QTY_TO_TRADE[quote.marketName]) {
             splittedQuantity = quote.quantity / chunks;
         }
         const startAsk = tick.ask + (tick.spread / 3);
@@ -138,7 +136,7 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
                                   isSpam, quote.condition, quote.target);
         }
 
-        console.log(`SPAM ASK: ${chunks} Orders \nBids: ${bids} \nDelays: ${delaysInMs} \n`)
+        console.log(`SPAM ASK: ${chunks} Orders \nBids: ${asks} \nDelays: ${delaysInMs} \n`)
 
         for (let i = 0; i < chunks; i++) {
             setTimeout(() => this.buy(quotes[i]), delaysInMs[i]);

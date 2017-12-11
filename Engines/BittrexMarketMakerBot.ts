@@ -1,10 +1,7 @@
-declare const global;
-
 import BittrexBroker from "../Brokers/BittrexBroker";
 import IBroker from "../Brokers/IBroker";
 
-import CONFIG from "../Config/CONFIG";
-global.CONFIG = CONFIG;
+import * as CONFIG from "../Config/CONFIG";
 
 import BittrexTickEventEmitter from "../MarketDataEventEmitters/BittrexTickEventEmitter";
 import ITickEventEmitter from "../MarketDataEventEmitters/ITickEventEmitter";
@@ -67,28 +64,28 @@ export default class BittrexMarketMakerBot {
 
         return;
 
-        let startQuantity = 0;
-        if (this.marketName.split("-")[0] === "BTC") {
-            startQuantity = CONFIG.BITTREX.START_BTC_QUANTITY;
-        }
+        // let startQuantity = 0;
+        // if (this.marketName.split("-")[0] === "BTC") {
+        //     startQuantity = CONFIG.BITTREX.START_BTC_QUANTITY;
+        // }
 
-        if (startQuantity === 0) {
-            throw new Error("NO START QUANTITY FOR " + this.marketName);
-        }
+        // if (startQuantity === 0) {
+        //     throw new Error("NO START QUANTITY FOR " + this.marketName);
+        // }
 
-        // 1st outbid
-        let tickListener: (tick: Tick) => void;
-        tickListener = (tick: Tick): void => {
-            // Clean listener
-            this.tickEmitter.removeListener(this.marketName, tickListener);
-            // Generate outBid quote
-            const newBid = tick.bid + (tick.spread * 0.01);
-            const outBidQuote = new Quote(this.marketName, newBid, startQuantity,
-                                        OrderSide.BUY, OrderType.LIMIT, OrderTimeEffect.GOOD_UNTIL_CANCELED);
-            // Sell
-            this.broker.buy(outBidQuote);
-        };
-        this.tickEmitter.on(this.marketName, tickListener);
+        // // 1st outbid
+        // let tickListener: (tick: Tick) => void;
+        // tickListener = (tick: Tick): void => {
+        //     // Clean listener
+        //     this.tickEmitter.removeListener(this.marketName, tickListener);
+        //     // Generate outBid quote
+        //     const newBid = tick.bid + (tick.spread * 0.01);
+        //     const outBidQuote = new Quote(this.marketName, newBid, startQuantity,
+        //                                 OrderSide.BUY, OrderType.LIMIT, OrderTimeEffect.GOOD_UNTIL_CANCELED);
+        //     // Sell
+        //     this.broker.buy(outBidQuote);
+        // };
+        // this.tickEmitter.on(this.marketName, tickListener);
 
     }
 }

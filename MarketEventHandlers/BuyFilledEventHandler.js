@@ -1,8 +1,6 @@
-"use strict";
-exports.__esModule = true;
-var OpenOrdersStatusDetector_1 = require("../MarketEventDetectors/OpenOrdersStatusDetector");
-var Order_1 = require("../Models/Order");
-var Quote_1 = require("../Models/Quote");
+import { UPDATE_ORDER_STATUS_EVENTS } from "../MarketEventDetectors/OpenOrdersStatusDetector";
+import { OrderSide, OrderTimeEffect, OrderType } from "../Models/Order";
+import Quote from "../Models/Quote";
 /**
  * - Subscribe to buy filled events
  * - check if filled or partially filled
@@ -11,51 +9,47 @@ var Quote_1 = require("../Models/Quote");
  * - if filled:
  *      - outask
  */
-var BuyFilledEventHandler = /** @class */ (function () {
-    function BuyFilledEventHandler(openOrdersStatusDetector, tickEventEmitter, broker) {
+export default class BuyFilledEventHandler {
+    constructor(openOrdersStatusDetector, tickEventEmitter, broker) {
         this.openOrdersStatusDetector = openOrdersStatusDetector;
         this.tickEventEmitter = tickEventEmitter;
         this.broker = broker;
         this.startMonitoring();
     }
-    BuyFilledEventHandler.prototype.startMonitoring = function () {
-        this.openOrdersStatusDetector.on(OpenOrdersStatusDetector_1.UPDATE_ORDER_STATUS_EVENTS.FILLED_BUY_ORDER, this.handleFilledBuyOrder);
-        this.openOrdersStatusDetector.on(OpenOrdersStatusDetector_1.UPDATE_ORDER_STATUS_EVENTS.PARTIALLY_FILLED_BUY_ORDER, this.handlePartiallyFilledBuyOrder);
-    };
-    BuyFilledEventHandler.prototype.handleFilledBuyOrder = function (order) {
-        var _this = this;
+    startMonitoring() {
+        this.openOrdersStatusDetector.on(UPDATE_ORDER_STATUS_EVENTS.FILLED_BUY_ORDER, this.handleFilledBuyOrder);
+        this.openOrdersStatusDetector.on(UPDATE_ORDER_STATUS_EVENTS.PARTIALLY_FILLED_BUY_ORDER, this.handlePartiallyFilledBuyOrder);
+    }
+    handleFilledBuyOrder(order) {
         BuyFilledEventHandler.lastFilledBuyOrder = order;
-        var tickListener;
-        tickListener = function (tick) {
+        let tickListener;
+        tickListener = (tick) => {
             // Clean listener
-            _this.tickEventEmitter.removeListener(order.marketName, tickListener);
+            this.tickEventEmitter.removeListener(order.marketName, tickListener);
             // Generate outAsk quote
-            var outAskQuote = _this.generateOutAskQuote(order, tick);
+            const outAskQuote = this.generateOutAskQuote(order, tick);
             // Sell
-            _this.broker.sell(outAskQuote);
+            this.broker.sell(outAskQuote);
         };
         this.tickEventEmitter.on(order.marketName, tickListener);
-    };
-    BuyFilledEventHandler.prototype.handlePartiallyFilledBuyOrder = function (order) {
-        var _this = this;
+    }
+    handlePartiallyFilledBuyOrder(order) {
         // Cancel remaining
         this.broker.cancelOrder(order.id);
         BuyFilledEventHandler.lastFilledBuyOrder = order;
-        var tickListener;
-        tickListener = function (tick) {
+        let tickListener;
+        tickListener = (tick) => {
             // Clean listener
-            _this.tickEventEmitter.removeListener(order.marketName, tickListener);
+            this.tickEventEmitter.removeListener(order.marketName, tickListener);
             // Generate outAsk quote
-            var outAskQuote = _this.generateOutAskQuote(order, tick);
+            const outAskQuote = this.generateOutAskQuote(order, tick);
             // Sell
-            _this.broker.sell(outAskQuote);
+            this.broker.sell(outAskQuote);
         };
         this.tickEventEmitter.on(order.marketName, tickListener);
-    };
-    BuyFilledEventHandler.prototype.generateOutAskQuote = function (order, tick) {
-        var newAsk = tick.ask - (tick.spread * 0.01);
-        return new Quote_1["default"](order.marketName, newAsk, order.quantityFilled, Order_1.OrderSide.SELL, Order_1.OrderType.LIMIT, Order_1.OrderTimeEffect.GOOD_UNTIL_CANCELED);
-    };
-    return BuyFilledEventHandler;
-}());
-exports["default"] = BuyFilledEventHandler;
+    }
+    generateOutAskQuote(order, tick) {
+        const newAsk = tick.ask - (tick.spread * 0.01);
+        return new Quote(order.marketName, newAsk, order.quantityFilled, OrderSide.SELL, OrderType.LIMIT, OrderTimeEffect.GOOD_UNTIL_CANCELED);
+    }
+}

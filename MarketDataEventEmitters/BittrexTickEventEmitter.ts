@@ -2,10 +2,10 @@ import * as Bluebird from "bluebird";
 import { EventEmitter } from "events";
 import { setInterval } from "timers";
 import Tick from "../Models/Tick";
-import CONFIG from "./../Config/CONFIG";
+import * as CONFIG from "./../Config/CONFIG";
 import ITickEventEmitter from "./ITickEventEmitter";
 
-import * as bittrexClient from "./../CustomExchangeClients/node-bittrex-api";
+const bittrexClient = require("./../CustomExchangeClients/node-bittrex-api");
 const bittrex = Bluebird.promisifyAll(bittrexClient);
 bittrex.options({
     apikey : process.env.BITTREX_API_KEY,

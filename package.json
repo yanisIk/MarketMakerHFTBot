@@ -4,6 +4,7 @@
   "description": "Generic market maker HFT bot",
   "main": "main.js",
   "scripts": {
+    "start": "tsc main.ts --target ES6",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Yanis Ikene",
@@ -13,6 +14,9 @@
     "@types/node": "^8.0.57"
   },
   "dependencies": {
+    "@types/bluebird": "^3.5.18",
+    "@types/dotenv-safe": "^4.0.1",
+    "@types/lodash": "^4.14.88",
     "async": "^2.6.0",
     "bluebird": "^3.5.1",
     "cluster": "^0.7.7",

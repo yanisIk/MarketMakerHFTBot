@@ -1,9 +1,9 @@
 declare const global;
 
-import cluster from "cluster";
-import dotenv from "dotenv-safe";
-import _ from "lodash";
-import CONFIG from "./Config/CONFIG";
+import * as cluster from "cluster";
+import * as dotenv from "dotenv-safe";
+import * as _ from "lodash";
+import * as CONFIG from "./Config/CONFIG";
 import BittrexMarketMakerBot from "./Engines/BittrexMarketMakerBot";
 
 dotenv.load();

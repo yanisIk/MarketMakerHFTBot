@@ -1,7 +1,5 @@
-"use strict";
-exports.__esModule = true;
-var ORDER_EVENT_TYPE;
+export var ORDER_EVENT_TYPE;
 (function (ORDER_EVENT_TYPE) {
     ORDER_EVENT_TYPE[ORDER_EVENT_TYPE["BUY_ORDER"] = 0] = "BUY_ORDER";
     ORDER_EVENT_TYPE[ORDER_EVENT_TYPE["SELL_ORDER"] = 1] = "SELL_ORDER";
-})(ORDER_EVENT_TYPE = exports.ORDER_EVENT_TYPE || (exports.ORDER_EVENT_TYPE = {}));
+})(ORDER_EVENT_TYPE || (ORDER_EVENT_TYPE = {}));
