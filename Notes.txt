@@ -12,3 +12,34 @@ BUY ORDER:
   OrderType: 'LIMIT',
   Quantity: 0.03393666,
   Rate: 0.027986925 }
+
+  TODO: Manage partial quantities over time (how to get filled amount from the already partial field order)
+
+
+TODO: LOGS FOR SELL ORDER IN OUTBID DETECTOR FIX
+
+  --- NEW OPEN BUY ORDER ---
+OrderID: 073e9d10-a667-4d5c-9cad-f48602a02847
+Quantity:0.8332124564249049 @ Rate:0.0300043522
+
+
+--- OUTBIDED ORDER ---
+OrderID: 073e9d10-a667-4d5c-9cad-f48602a02847
+Quantity:0.8332124564249049 @ Rate:0.0300043522
+
+
+--- NEW OPEN CANCEL ORDER ---
+OrderID: 073e9d10-a667-4d5c-9cad-f48602a02847
+
+--- OUTBID SPREAD: 1.4541044287179532 % ---
+
+--- CANCELED BUY ORDER ---
+OrderID: 073e9d10-a667-4d5c-9cad-f48602a02847
+Quantity Filled:0 Rate:0.03000435
+
+
+--- NEW OPEN BUY ORDER ---
+OrderID: fd3050c9-a2fe-46cd-96e5-523856c511f3
+Quantity:0.8332124564249049 @ Rate:0.0300113277
+
+SELL ORDER IN OUTBID DETECTOR

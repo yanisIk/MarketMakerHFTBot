@@ -1,13 +1,13 @@
 declare const CONFIG: any;
 import IBroker from "../Brokers/IBroker";
+import OutBidManager from "../Managers/OutbidManager";
 import ITickEventEmitter from "../MarketDataEventEmitters/ITickEventEmitter";
 import OpenOrdersStatusDetector, { UPDATE_ORDER_STATUS_EVENTS } from "../MarketEventDetectors/OpenOrdersStatusDetector";
 import Order, { OrderSide, OrderStatus, OrderTimeEffect, OrderType } from "../Models/Order";
 import Quote from "../Models/Quote";
 import Tick from "../Models/Tick";
 import BuyFilledEventHandler from "./BuyFilledEventHandler";
-
-type TickListener = (tick: Tick) => void;
+import OutBidEventHandler from "./OutBidEventHandler";
 
 /**
  * - Subscribe to sell filled events
@@ -21,57 +21,26 @@ export default class SellFilledEventHandler {
     public static lastFilledSellOrder: Order;
 
     constructor(private openOrdersStatusDetector: OpenOrdersStatusDetector,
-                private tickEventEmitter: ITickEventEmitter,
-                private broker: IBroker) {
+                private outBidManager: OutBidManager) {
         this.startMonitoring();
     }
 
     private startMonitoring(): void {
-        this.openOrdersStatusDetector.on(UPDATE_ORDER_STATUS_EVENTS.FILLED_SELL_ORDER, (order: Order) => {
-
-            SellFilledEventHandler.lastFilledSellOrder = order;
-
-            // TODO (log ? )
-            // if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
-            //     console.log(`!!!! SOLD !!!!!`);
-            //     // console.log(`LAST BUY \n${BuyFilledEventHandler.lastFilledBuyOrder}\n`);
-            //     // console.log(`LAST SELL \n${SellFilledEventHandler.lastFilledSellOrder}\n`);
-            //     const profitPercentage = ( (SellFilledEventHandler.lastFilledSellOrder.rate
-            //                              - BuyFilledEventHandler.lastFilledBuyOrder.rate) /
-            //                               SellFilledEventHandler.lastFilledSellOrder.rate) * 100;
-            //     console.log(`PROFIT PERCENTAGE: ${profitPercentage.toFixed(6)}`);
-            // }
-
-            console.log(`!!!! SOLD !!!!!`);
-            // console.log(`LAST BUY \n${BuyFilledEventHandler.lastFilledBuyOrder}\n`);
-            // console.log(`LAST SELL \n${SellFilledEventHandler.lastFilledSellOrder}\n`);
-            const profitPercentage = ( (SellFilledEventHandler.lastFilledSellOrder.rate
-                                     - BuyFilledEventHandler.lastFilledBuyOrder.rate) /
-                                      SellFilledEventHandler.lastFilledSellOrder.rate) * 100;
-            console.log(`PROFIT PERCENTAGE: ${profitPercentage.toFixed(8)}`);
-
-            // If testing, do not re outbid
-            if (CONFIG.GLOBAL.IS_TEST) {
-                return;
-            }
-
-            let tickListener: TickListener;
-            tickListener = (tick: Tick): void => {
-                // Clean listener
-                this.tickEventEmitter.removeListener(order.marketName, tickListener);
-                // Generate outBid quote
-                const outBidQuote = this.generateOutBidQuote(order, tick);
-                // Sell
-                this.broker.buy(outBidQuote);
-            };
-            this.tickEventEmitter.on(order.marketName, tickListener);
-        });
+        this.openOrdersStatusDetector.on(UPDATE_ORDER_STATUS_EVENTS.FILLED_SELL_ORDER,
+            (sellOrder: Order) => this.handleFilledSell(sellOrder));
+        this.openOrdersStatusDetector.on(UPDATE_ORDER_STATUS_EVENTS.PARTIALLY_FILLED_SELL_ORDER,
+            (sellOrder: Order) => this.handleFilledSell(sellOrder));
     }
 
-    private generateOutBidQuote(order: Order, tick: Tick): Quote {
-        const newBid = tick.bid + (tick.spread * 0.01);
-        return new Quote(order.marketName, newBid, order.quantityFilled,
-                         OrderSide.BUY, OrderType.LIMIT, OrderTimeEffect.GOOD_UNTIL_CANCELED);
+    private handleFilledSell(sellOrder: Order) {
+
+        // If testing, do not re outbid
+        if (CONFIG.GLOBAL.IS_TEST) {
+            return;
+        }
+
+        // Takes filled quantity and use it to outbid
+        this.outBidManager.outBid(sellOrder);
     }
 
 }

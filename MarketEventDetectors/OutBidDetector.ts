@@ -8,19 +8,27 @@ import Tick from "../Models/Tick";
 import OpenOrdersStatusDetector from "./OpenOrdersStatusDetector";
 
 type TickListener = (tick: Tick) => void;
-type OrderListener = (order: Order) => void;
+type OrderListener = (buyOrder: Order) => void;
 
 /**
- * - Subscribe to open buy orders
+ * - Subscribe to open buy buyOrders
  * - Subscribe to ticks
  *
- * on open buy order =>
- *  if tick.bid > order.rate
- *      emit order
+ * on open buy buyOrder =>
+ *  if tick.bid > buyOrder.rate
+ *      emit buyOrder
  */
 export default class OutBidDetector extends EventEmitter {
 
     public static readonly OUTBID_ORDER_EVENT: string = "OUTBID_ORDER_EVENT";
+    public static readonly monitoredOrders: Map<string, Order> = new Map();
+
+    public static getCurrentBid(): number {
+        if (OutBidDetector.monitoredOrders.size === 0) {
+            return null;
+        }
+        return OutBidDetector.monitoredOrders.values[0].rate;
+    }
 
     constructor(private broker: IBroker,
                 private filledOrdersEmitter: OpenOrdersStatusDetector,
@@ -33,34 +41,42 @@ export default class OutBidDetector extends EventEmitter {
     }
 
     /**
-     * - Listen to open buy orders
-     * - On new buy order:
-     *      - Listen to ticks and check if tick.bid < order.rate
-     * - On open cancel order:
+     * - Listen to open buy buyOrders
+     * - On new buy buyOrder:
+     *      - Listen to ticks and check if tick.bid < buyOrder.rate
+     * - On open cancel buyOrder:
      *      - Stop monitoring
      * - LISTEN WHEN ASK GOES LOWER MORE THAN 5 TIMES, CANCEL (if price is going down)
      */
     private startDetection(): void {
-        // Listen to open buy orders
-        this.broker.on(OPEN_ORDER_EVENTS.OPEN_BUY_ORDER_EVENT, async (order: Order) => {
+        // Listen to open buy buyOrders
+        this.broker.on(OPEN_ORDER_EVENTS.OPEN_BUY_ORDER_EVENT, async (buyOrder: Order) => {
 
-            if (order.isSpam) {
+            if (buyOrder.isSpam) {
                 await new Promise((resolve, reject) =>
                                     setTimeout(resolve, CONFIG.BITTREX.SPAM_ORDER_MONITORING_DELAY_IN_MS));
             }
 
-            // For each buy order, compare its bid to latest tick bid
+            // TODO FIX
+            if (buyOrder.side === OrderSide.SELL) {
+                console.log("SELL ORDER IN OUTBID DETECTOR");
+            }
+
+            // Register as monitored buyOrder
+            OutBidDetector.monitoredOrders.set(buyOrder.id, buyOrder);
+
+            // For each buy buyOrder, compare its bid to latest tick bid
             let tickListener: TickListener;
             let canceledOrderListener: OrderListener;
             let filledBuyOrderListener: OrderListener;
             let partiallyFilledBuyOrderListener: OrderListener;
 
             const cleanListeners = () => {
-                this.ticksEmitter.removeListener(order.marketName, tickListener);
-                this.broker.OPEN_CANCEL_ORDER_EVENT_EMITTER.removeListener(order.id, canceledOrderListener);
-                this.filledOrdersEmitter.FILLED_BUY_ORDER_EVENT_EMITTER.removeListener(order.id,
+                this.ticksEmitter.removeListener(buyOrder.marketName, tickListener);
+                this.broker.OPEN_CANCEL_ORDER_EVENT_EMITTER.removeListener(buyOrder.id, canceledOrderListener);
+                this.filledOrdersEmitter.FILLED_BUY_ORDER_EVENT_EMITTER.removeListener(buyOrder.id,
                                                                                         filledBuyOrderListener);
-                this.filledOrdersEmitter.PARTIALLY_FILLED_BUY_ORDER_EVENT_EMITTER.removeListener(order.id,
+                this.filledOrdersEmitter.PARTIALLY_FILLED_BUY_ORDER_EVENT_EMITTER.removeListener(buyOrder.id,
                     partiallyFilledBuyOrderListener);
             };
 
@@ -68,19 +84,23 @@ export default class OutBidDetector extends EventEmitter {
             let lastAsk: number;
             let numberOfTimesLowerAsk: number = 0;
             tickListener = (tick: Tick) =>  {
-                if (tick.bid > order.rate) {
+                if (tick.bid > buyOrder.rate) {
                     cleanListeners();
-                    // TODO: order could be already partially filled, sending the original order will be the incorrect amount
-                    this.emit(OutBidDetector.OUTBID_ORDER_EVENT, order);
-                }
-                if (lastAsk && lastAsk > tick.ask) {
+                    // Remove from monitored buyOrders
+                    OutBidDetector.monitoredOrders.delete(buyOrder.id);
+                    this.emit(OutBidDetector.OUTBID_ORDER_EVENT, buyOrder);
+                } else if (lastAsk && lastAsk > tick.ask) {
                     numberOfTimesLowerAsk++;
                     if (numberOfTimesLowerAsk === 5) {
                         cleanListeners();
-                        this.broker.cancelOrder(order.id);
-                        setTimeout(() => this.emit(OutBidDetector.OUTBID_ORDER_EVENT, order), 2000);
+                        // Remove from monitored buyOrders
+                        OutBidDetector.monitoredOrders.delete(buyOrder.id);
+                        // Cancel buyOrder to do buy sell new one
+                        this.broker.cancelOrder(buyOrder.id);
+                        // Wait 2s for the ask to stabilize then emit outbid
+                        setTimeout(() => this.emit(OutBidDetector.OUTBID_ORDER_EVENT, buyOrder), 2000);
                         if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
-                            console.log(`\n--- FALLING ASK, CANCELING BUY ORDER ${order.id}\n` +
+                            console.log(`\n--- FALLING ASK, CANCELING BUY ORDER ${buyOrder.id}\n` +
                                         `REOUTBID WITH NEW LOWER BID IN 2 SECONDES... ---\n`);
                         }
                     }
@@ -88,37 +108,41 @@ export default class OutBidDetector extends EventEmitter {
                 lastAsk = tick.ask;
             };
 
-            // For each canceled order, check if is same as actual monitored order
-            // If same, remove listeners;
+            // check if buyOrder is canceled and stop monitoring
             canceledOrderListener = (canceledOrder: Order) => {
                 cleanListeners();
+                // Remove from monitored buyOrders
+                OutBidDetector.monitoredOrders.delete(buyOrder.id);
             };
 
-            // For each filled order, check if is same as actual monitored order
-            // If same, remove listeners;
+            // check if buyOrder is filled and stop monitoring
             filledBuyOrderListener = (filledBuyOrder: Order) => {
                 cleanListeners();
+                // Remove from monitored buyOrders
+                OutBidDetector.monitoredOrders.delete(buyOrder.id);
             };
 
-            // Update order when partiallyFilled
+            // check if buyOrder is partially filled and update actual one;
             partiallyFilledBuyOrderListener = (partiallyFilledOrder: Order) => {
-                partiallyFilledOrder.isSpam = order.isSpam;
-                order = partiallyFilledOrder;
+                partiallyFilledOrder.isSpam = buyOrder.isSpam;
+                buyOrder = partiallyFilledOrder;
             };
 
             // Begin to listen
-            this.ticksEmitter.on(order.marketName, tickListener);
-            this.broker.OPEN_CANCEL_ORDER_EVENT_EMITTER.on(order.id, canceledOrderListener);
-            this.filledOrdersEmitter.FILLED_BUY_ORDER_EVENT_EMITTER.on(order.id, filledBuyOrderListener);
-            this.filledOrdersEmitter.PARTIALLY_FILLED_BUY_ORDER_EVENT_EMITTER.on(order.id, partiallyFilledBuyOrderListener);
+            this.ticksEmitter.on(buyOrder.marketName, tickListener);
+            this.broker.OPEN_CANCEL_ORDER_EVENT_EMITTER.once(buyOrder.id, canceledOrderListener);
+            this.filledOrdersEmitter.FILLED_BUY_ORDER_EVENT_EMITTER.once(buyOrder.id, filledBuyOrderListener);
+            this.filledOrdersEmitter.PARTIALLY_FILLED_BUY_ORDER_EVENT_EMITTER
+                                                        .on(buyOrder.id, partiallyFilledBuyOrderListener);
         });
     }
 
     private logEvents(): void {
         if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
             this.on(OutBidDetector.OUTBID_ORDER_EVENT, (order: Order) => {
-                console.log(`\n--- OUTBIDED ORDER ${order.id} ---\n`);
-            })
+                console.log(`\n--- OUTBIDED ORDER --- \nOrderID: ${order.id}\n` +
+                                `Quantity:${order.quantity} @ Rate:${order.rate}\n`);
+            });
         }
     }
 

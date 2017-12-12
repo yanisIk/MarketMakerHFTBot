@@ -1,6 +1,7 @@
-declare const CONFIG: any;
 import IBroker from "../Brokers/IBroker";
+import OutAskManager from "../Managers/OutAskManager";
 import ITickEventEmitter from "../MarketDataEventEmitters/ITickEventEmitter";
+import OpenOrdersStatusDetector, { UPDATE_ORDER_STATUS_EVENTS } from "../MarketEventDetectors/OpenOrdersStatusDetector";
 import OutAskDetector from "../MarketEventDetectors/OutAskDetector";
 import Order, { OrderSide, OrderTimeEffect, OrderType } from "../Models/Order";
 import Quote from "../Models/Quote";
@@ -20,42 +21,16 @@ type TickListener = (tick: Tick) => void;
 
 export default class OutAskEventHandler {
 
-    constructor(private tickEventEmitter: ITickEventEmitter,
-                private outAskDetector: OutAskDetector,
-                private broker: IBroker) {
+    constructor(private outAskDetector: OutAskDetector,
+                private outAskManager: OutAskManager) {
         this.startMonitoring();
     }
 
     private startMonitoring(): void {
-        this.outAskDetector.on(OutAskDetector.OUTASK_ORDER_EVENT, async (order: Order) => {
+        this.outAskDetector.on(OutAskDetector.OUTASK_ORDER_EVENT, async (sellOrder: Order) => {
 
-            const cancelOrderPromise = this.broker.cancelOrder(order.id);
+            this.outAskManager.outAsk(sellOrder);
 
-            let tickListener: TickListener;
-            tickListener = (tick: Tick): void => {
-                // Clean listener
-                this.tickEventEmitter.removeListener(order.marketName, tickListener);
-                // Generate outask quote
-                const outaskQuote = this.generateOutAskQuote(order, tick);
-                // Sell
-                this.broker.sell(outaskQuote);
-            };
-            try {
-                await cancelOrderPromise;
-                this.tickEventEmitter.on(order.marketName, tickListener);
-            } catch (err) {
-                console.log("!!! CANCEL FAILED IN OUTASKEVENTHANDLER, NO RE OUTBID !!!\n ORDERID:", order.id);
-                if ((err === "ORDER_NOT_OPEN") || (err.message === "ORDER_NOT_OPEN")) {
-                    console.log("ORDER PROBABLY FILLED. \n ORDERID:", order.id);
-                }
-            }
         });
-    }
-
-    private generateOutAskQuote(order: Order, tick: Tick): Quote {
-        const newAsk: number = tick.ask - (tick.spread * 0.01);
-        let quantity: number = order.quantityRemaining;
-        return new Quote(order.marketName, newAsk, quantity,
-                         OrderSide.SELL, OrderType.LIMIT, OrderTimeEffect.GOOD_UNTIL_CANCELED);
     }
 }

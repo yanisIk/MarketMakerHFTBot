@@ -21,7 +21,7 @@ export default class Order extends Quote {
                 public readonly side: OrderSide,
                 public readonly type: OrderType,
                 public readonly timeEffect: OrderTimeEffect,
-                public isSpam: boolean,
+                public isSpam: boolean = false,
                 public status: OrderStatus,
                 public readonly condition?: OrderCondition,
                 public readonly target?: number,

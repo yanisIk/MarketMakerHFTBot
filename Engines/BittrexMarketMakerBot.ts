@@ -6,6 +6,8 @@ import * as CONFIG from "../Config/CONFIG";
 import BittrexTickEventEmitter from "../MarketDataEventEmitters/BittrexTickEventEmitter";
 import ITickEventEmitter from "../MarketDataEventEmitters/ITickEventEmitter";
 
+import OutAskManager from "../Managers/OutAskManager";
+import OutBidManager from "../Managers/OutBidManager";
 import OpenOrdersStatusDetector from "../MarketEventDetectors/OpenOrdersStatusDetector";
 import OutAskDetector from "../MarketEventDetectors/OutAskDetector";
 import OutBidDetector from "../MarketEventDetectors/OutBidDetector";
@@ -23,6 +25,9 @@ export default class BittrexMarketMakerBot {
     private broker: IBroker;
 
     private tickEmitter: ITickEventEmitter;
+
+    private outBidManager: OutBidManager;
+    private outAskManager: OutAskManager;
 
     private openOrdersStatusDetector: OpenOrdersStatusDetector;
     private outBidDetector: OutBidDetector;
@@ -49,16 +54,18 @@ export default class BittrexMarketMakerBot {
         this.tickEmitter = new BittrexTickEventEmitter();
         this.tickEmitter.subscribe(this.marketName);
 
+        this.outBidManager = new OutBidManager(this.tickEmitter, this.broker);
+        this.outAskManager = new OutAskManager(this.tickEmitter, this.broker);
+
         this.openOrdersStatusDetector = new OpenOrdersStatusDetector(this.broker,
                                         CONFIG.BITTREX.ORDER_WATCH_INTERVAL_IN_MS);
         this.outBidDetector = new OutBidDetector(this.broker, this.openOrdersStatusDetector, this.tickEmitter);
         this.outAskDetector = new OutAskDetector(this.broker, this.openOrdersStatusDetector, this.tickEmitter);
 
-        this.outBidHandler = new OutBidEventHandler(this.tickEmitter, this.outBidDetector, this.broker);
-        this.buyFilledHandler = new BuyFilledEventHandler(this.openOrdersStatusDetector, this.tickEmitter, this.broker);
-        this.outAskHandler = new OutAskEventHandler(this.tickEmitter, this.outAskDetector, this.broker);
-        this.sellFilledHandler = new SellFilledEventHandler(this.openOrdersStatusDetector,
-                                                            this.tickEmitter, this.broker);
+        this.outBidHandler = new OutBidEventHandler(this.outBidDetector, this.outBidManager);
+        this.buyFilledHandler = new BuyFilledEventHandler(this.openOrdersStatusDetector, this.outAskManager);
+        this.outAskHandler = new OutAskEventHandler(this.outAskDetector, this.outAskManager);
+        this.sellFilledHandler = new SellFilledEventHandler(this.openOrdersStatusDetector, this.outBidManager);
 
     }
 

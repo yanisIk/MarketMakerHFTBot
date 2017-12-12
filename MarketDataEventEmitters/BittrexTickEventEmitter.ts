@@ -32,7 +32,9 @@ export default class BittrexTickEventEmitter extends EventEmitter implements ITi
     public subscribe(marketName: string) {
         const intervalId = setInterval(async () => {
             const tick: Tick = await this.getTicker(marketName);
-            this.emit(marketName, tick);
+            if (tick) {
+                this.emit(marketName, tick);
+            }
         }, CONFIG.BITTREX.TICK_POLL_INTERVAL_IN_MS);
         this.pollingIntervalIds.set(marketName, intervalId);
     }

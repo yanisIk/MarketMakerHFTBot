@@ -165,9 +165,7 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
             return orderId;
         } catch (err) {
             if ((err === "ORDER_NOT_OPEN") || (err.message === "ORDER_NOT_OPEN")) {
-                if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
-                    console.log(`ORDER ALREADY CLOSED ${orderId}`);
-                }
+                throw new Error("ORDER_ALREADY_CLOSED");
             }
             console.error(`\n!!! Error om BittrexBroker.cancelOrder() !!!`);
             console.error(err);
