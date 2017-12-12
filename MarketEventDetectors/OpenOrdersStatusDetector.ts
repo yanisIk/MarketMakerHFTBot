@@ -65,6 +65,7 @@ export default class OpenOrdersStatusDetector extends EventEmitter {
             throw new Error("ORDER STILL OPEN");
         }
 
+        // CANCELED ORDERS
         if (updatedOrder.status === OrderStatus.CANCELED) {
             if (updatedOrder.side === OrderSide.BUY) {
                 this.CANCELED_BUY_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
@@ -76,6 +77,7 @@ export default class OpenOrdersStatusDetector extends EventEmitter {
             }
         }
 
+        // FILLED ORDERS
         if (updatedOrder.status === OrderStatus.FILLED) {
             if (updatedOrder.side === OrderSide.BUY) {
                 this.FILLED_BUY_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
@@ -87,6 +89,7 @@ export default class OpenOrdersStatusDetector extends EventEmitter {
             }
         }
 
+        // PARTIALLY FILLED ORDERS
         if (updatedOrder.status === OrderStatus.PARTIALLY_FILLED) {
             if (updatedOrder.side === OrderSide.BUY) {
                 this.FILLED_BUY_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
@@ -105,31 +108,31 @@ export default class OpenOrdersStatusDetector extends EventEmitter {
     private logEvents(): void {
         if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
             this.on(UPDATE_ORDER_STATUS_EVENTS.FILLED_BUY_ORDER, (order: Order) => {
-                console.log(`\n--- FILLED BUY ORDER --- \nOrderID: ${order.id}\n` +
+                console.log(`\n--- FILLED BUY ORDER [${order.marketName}] --- \nOrderID: ${order.id}\n` +
                             `Quantity Filled:${order.quantityFilled} @ Rate:${order.rate}\n`);
             });
             this.on(UPDATE_ORDER_STATUS_EVENTS.PARTIALLY_FILLED_BUY_ORDER, (order: Order) => {
-                console.log(`\n--- PARTIALLY FILLED BUY ORDER --- \nOrderID: ${order.id}\n` +
+                console.log(`\n--- PARTIALLY FILLED BUY ORDER [${order.marketName}] --- \nOrderID: ${order.id}\n` +
                             `Quantity Filled:${order.quantityFilled}\n` +
                             `Qty Remaining: ${order.quantityRemaining}\n` +
                             `@ Rate:${order.rate}\n`);
             });
             this.on(UPDATE_ORDER_STATUS_EVENTS.PARTIALLY_FILLED_SELL_ORDER, (order: Order) => {
-                console.log(`\n--- PARTIALLY FILLED SELL ORDER --- \nOrderID: ${order.id}\n` +
+                console.log(`\n--- PARTIALLY FILLED SELL ORDER [${order.marketName}] --- \nOrderID: ${order.id}\n` +
                 `Quantity Filled:${order.quantityFilled}\n` +
                 `Qty Remaining: ${order.quantityRemaining}\n` +
                 `@ Rate:${order.rate}\n`);
             });
             this.on(UPDATE_ORDER_STATUS_EVENTS.FILLED_SELL_ORDER, (order: Order) => {
-                console.log(`\n--- FILLED SELL ORDER --- \nOrderID: ${order.id}\n` +
+                console.log(`\n--- FILLED SELL ORDER [${order.marketName}] --- \nOrderID: ${order.id}\n` +
                             `Quantity Filled:${order.quantityFilled} @ Rate:${order.rate}\n`);
             });
             this.on(UPDATE_ORDER_STATUS_EVENTS.CANCELED_BUY_ORDER, (order: Order) => {
-                console.log(`\n--- CANCELED BUY ORDER --- \nOrderID: ${order.id}\n` +
+                console.log(`\n--- CANCELLED BUY ORDER [${order.marketName}] --- \nOrderID: ${order.id}\n` +
                             `Quantity Filled:${order.quantityFilled} Rate:${order.rate}\n`);
             });
             this.on(UPDATE_ORDER_STATUS_EVENTS.CANCELED_SELL_ORDER, (order: Order) => {
-                console.log(`\n--- CANCELED SELL ORDER --- \nOrderID: ${order.id}\n` +
+                console.log(`\n--- CANCELLED SELL ORDER [${order.marketName}] --- \nOrderID: ${order.id}\n` +
                             `Quantity Filled:${order.quantityFilled} Rate:${order.rate}\n`);
             });
         }

@@ -18,7 +18,16 @@ import OutBidEventHandler from "./OutBidEventHandler";
 
 export default class SellFilledEventHandler {
 
-    public static lastFilledSellOrder: Order;
+    // Key: orderId, Value: Last partial fill
+    /**
+     * First partial fill:
+     * - set order.quantityFilled
+     * - set order.partialFill = partial fill
+     * Second+ partial fill:
+     * - set order.quantityFilled - getValue = partial fill
+     * - set order.partialFill = partial fill
+     */
+    private lastPartialFills: Map<string, number> = new Map();
 
     constructor(private openOrdersStatusDetector: OpenOrdersStatusDetector,
                 private outBidManager: OutBidManager) {
@@ -37,6 +46,18 @@ export default class SellFilledEventHandler {
         // If testing, do not re outbid
         if (CONFIG.GLOBAL.IS_TEST) {
             return;
+        }
+
+        const lastQuantityFilled = this.lastPartialFills.get(sellOrder.id);
+        // If Already partial filled
+        if (lastQuantityFilled) {
+            const partialFill = sellOrder.quantityFilled - lastQuantityFilled;
+            this.lastPartialFills.set(sellOrder.id, partialFill);
+            sellOrder.partialFill = partialFill;
+        // Else First partial fill
+        } else {
+            this.lastPartialFills.set(sellOrder.id, sellOrder.quantityFilled);
+            sellOrder.partialFill = sellOrder.quantityFilled;
         }
 
         // Takes filled quantity and use it to outbid

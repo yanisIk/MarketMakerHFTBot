@@ -12,6 +12,7 @@ export default class Order extends Quote {
     public closedTimestamp: number | Date;
     public quantityFilled: number = 0;
     public quantityRemaining: number;
+    public partialFill: number = 0;
 
     constructor(public readonly id: string,
                 public readonly openedTimestamp: number | Date,

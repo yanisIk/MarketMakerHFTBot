@@ -64,7 +64,7 @@ export default class OutAskManager {
                 break;
             }
             case OrderSide.BUY: {
-                quantity = order.quantityFilled;
+                quantity = order.partialFill || order.quantityFilled;
                 break;
             }
         }

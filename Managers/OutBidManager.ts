@@ -30,7 +30,7 @@ export default class OutBidManager {
         tickListener = (tick: Tick): void => {
             // Do not buy if spread < 0.8
             const spreadPercentage = tick.spreadPercentage;
-            if (spreadPercentage < 0.8) {
+            if (spreadPercentage < CONFIG.BITTREX.MIN_SPREAD_PERCENTAGE) {
                 return;
             }
             if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
@@ -73,7 +73,7 @@ export default class OutBidManager {
                 break;
             }
             case OrderSide.SELL: {
-                quantity = order.quantityFilled;
+                quantity = order.partialFill || order.quantityFilled;
                 break;
             }
         }

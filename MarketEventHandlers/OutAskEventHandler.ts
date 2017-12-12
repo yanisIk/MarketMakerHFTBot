@@ -7,8 +7,6 @@ import Order, { OrderSide, OrderTimeEffect, OrderType } from "../Models/Order";
 import Quote from "../Models/Quote";
 import Tick from "../Models/Tick";
 
-type TickListener = (tick: Tick) => void;
-
 /**
  * - Subscribe to ticks
  * - Subscribes to OutAskOrdersStream
