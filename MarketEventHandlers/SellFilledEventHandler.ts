@@ -32,18 +32,26 @@ export default class SellFilledEventHandler {
             SellFilledEventHandler.lastFilledSellOrder = order;
 
             // TODO (log ? )
-            if (CONFIG.IS_LOG_ACTIVE) {
-                console.log(`!!!! SOLD !!!!!`);
-                console.log(`LAST BUY \n${BuyFilledEventHandler.lastFilledBuyOrder}\n`);
-                console.log(`LAST SELL \n${SellFilledEventHandler.lastFilledSellOrder}\n`);
-                const profitPercentage = ( (SellFilledEventHandler.lastFilledSellOrder.rate
-                                         - BuyFilledEventHandler.lastFilledBuyOrder.rate) /
-                                          SellFilledEventHandler.lastFilledSellOrder.rate) * 100;
-                console.log(`PROFIT PERCENTAGE: ${profitPercentage.toFixed(6)}`);
-            }
+            // if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
+            //     console.log(`!!!! SOLD !!!!!`);
+            //     // console.log(`LAST BUY \n${BuyFilledEventHandler.lastFilledBuyOrder}\n`);
+            //     // console.log(`LAST SELL \n${SellFilledEventHandler.lastFilledSellOrder}\n`);
+            //     const profitPercentage = ( (SellFilledEventHandler.lastFilledSellOrder.rate
+            //                              - BuyFilledEventHandler.lastFilledBuyOrder.rate) /
+            //                               SellFilledEventHandler.lastFilledSellOrder.rate) * 100;
+            //     console.log(`PROFIT PERCENTAGE: ${profitPercentage.toFixed(6)}`);
+            // }
+
+            console.log(`!!!! SOLD !!!!!`);
+            // console.log(`LAST BUY \n${BuyFilledEventHandler.lastFilledBuyOrder}\n`);
+            // console.log(`LAST SELL \n${SellFilledEventHandler.lastFilledSellOrder}\n`);
+            const profitPercentage = ( (SellFilledEventHandler.lastFilledSellOrder.rate
+                                     - BuyFilledEventHandler.lastFilledBuyOrder.rate) /
+                                      SellFilledEventHandler.lastFilledSellOrder.rate) * 100;
+            console.log(`PROFIT PERCENTAGE: ${profitPercentage.toFixed(8)}`);
 
             // If testing, do not re outbid
-            if (CONFIG.IS_TEST) {
+            if (CONFIG.GLOBAL.IS_TEST) {
                 return;
             }
 
@@ -61,7 +69,7 @@ export default class SellFilledEventHandler {
     }
 
     private generateOutBidQuote(order: Order, tick: Tick): Quote {
-        const newBid = tick.bid + (tick.spread * 0.05);
+        const newBid = tick.bid + (tick.spread * 0.01);
         return new Quote(order.marketName, newBid, order.quantityFilled,
                          OrderSide.BUY, OrderType.LIMIT, OrderTimeEffect.GOOD_UNTIL_CANCELED);
     }

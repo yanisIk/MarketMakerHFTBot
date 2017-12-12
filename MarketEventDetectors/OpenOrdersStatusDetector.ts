@@ -22,6 +22,9 @@ export default class OpenOrdersStatusDetector extends EventEmitter {
                 private watchIntervalInMs: number) {
         super();
         this.startWatch();
+        if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
+            this.logEvents();
+        }
     }
 
     /**
@@ -30,63 +33,105 @@ export default class OpenOrdersStatusDetector extends EventEmitter {
      */
     private startWatch(): void {
 
-        this.broker.on(OPEN_ORDER_EVENTS.OPEN_BUY_ORDER_EVENT, this.handleOpenOrder);
-        this.broker.on(OPEN_ORDER_EVENTS.OPEN_SELL_ORDER_EVENT, this.handleOpenOrder);
+        this.broker.on(OPEN_ORDER_EVENTS.OPEN_BUY_ORDER_EVENT, (order: Order) => this.handleOpenOrder(order));
+        this.broker.on(OPEN_ORDER_EVENTS.OPEN_SELL_ORDER_EVENT, (order: Order) => this.handleOpenOrder(order));
 
     }
 
-    private handleOpenOrder(order: Order) {
-        if (CONFIG.BITTREX.IS_LOG_ACTIVE) {
-            console.log(`\n--- NEW OPEN ORDER --- \nOrderID: ${order.id}\nSide:${order.side} Rate:${order.rate}\n`);
+    private handleOpenOrder(order: Order): void {
+
+        // if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
+        //     console.log(`--- MONITORING OPEN ORDER  ${order.id} ---`);
+        // }
+
+        const tryCheckOrder = (firstTime?: boolean) => {
+            setTimeout(() => {
+                this.checkOrder(order)
+                .catch((err) => {
+                    // console.error(err);
+                    tryCheckOrder();
+                });
+            }, firstTime ? 0 : this.watchIntervalInMs);
+        };
+
+        tryCheckOrder(true);
+    }
+
+    private async checkOrder(order: Order): Promise<Order> {
+
+        const updatedOrder: Order = await this.broker.getOrder(order.id);
+
+        if (updatedOrder.status === OrderStatus.OPEN) {
+            throw new Error("ORDER STILL OPEN");
         }
-        let intervalId;
-        intervalId = setInterval(() => this.checkOrder(order, intervalId), this.watchIntervalInMs);
+
+        if (updatedOrder.status === OrderStatus.CANCELED) {
+            if (updatedOrder.side === OrderSide.BUY) {
+                this.CANCELED_BUY_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
+                this.emit(UPDATE_ORDER_STATUS_EVENTS.CANCELED_BUY_ORDER, updatedOrder);
+            }
+            if (updatedOrder.side === OrderSide.SELL) {
+                this.CANCELED_SELL_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
+                this.emit(UPDATE_ORDER_STATUS_EVENTS.CANCELED_SELL_ORDER, updatedOrder);
+            }
+        }
+
+        if (updatedOrder.status === OrderStatus.FILLED) {
+            if (updatedOrder.side === OrderSide.BUY) {
+                this.FILLED_BUY_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
+                this.emit(UPDATE_ORDER_STATUS_EVENTS.FILLED_BUY_ORDER, updatedOrder);
+            }
+            if (updatedOrder.side === OrderSide.SELL) {
+                this.FILLED_SELL_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
+                this.emit(UPDATE_ORDER_STATUS_EVENTS.FILLED_SELL_ORDER, updatedOrder);
+            }
+        }
+
+        if (updatedOrder.status === OrderStatus.PARTIALLY_FILLED) {
+            if (updatedOrder.side === OrderSide.BUY) {
+                this.FILLED_BUY_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
+                this.emit(UPDATE_ORDER_STATUS_EVENTS.PARTIALLY_FILLED_BUY_ORDER, updatedOrder);
+            }
+            if (updatedOrder.side === OrderSide.SELL) {
+                this.FILLED_SELL_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
+                this.emit(UPDATE_ORDER_STATUS_EVENTS.PARTIALLY_FILLED_SELL_ORDER, updatedOrder);
+            }
+            throw new Error("PARTIAL FILL, CONTINUE TO MONITOR");
+        }
+
+        return updatedOrder;
     }
 
-    private async checkOrder(order: Order, intervalId: any) {
-        try {
-            const updatedOrder: Order = await this.broker.getOrder(order.id);
-
-            if (updatedOrder.status !== OrderStatus.OPEN) {
-                clearInterval(intervalId);
-            }
-
-            if (updatedOrder.status === OrderStatus.CANCELED) {
-                if (updatedOrder.side === OrderSide.BUY) {
-                    this.CANCELED_BUY_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
-                    this.emit(UPDATE_ORDER_STATUS_EVENTS.CANCELED_BUY_ORDER, updatedOrder);
-                }
-                if (updatedOrder.side === OrderSide.SELL) {
-                    this.CANCELED_SELL_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
-                    this.emit(UPDATE_ORDER_STATUS_EVENTS.CANCELED_SELL_ORDER, updatedOrder);
-                }
-            }
-
-            if (updatedOrder.status === OrderStatus.FILLED) {
-                if (updatedOrder.side === OrderSide.BUY) {
-                    this.FILLED_BUY_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
-                    this.emit(UPDATE_ORDER_STATUS_EVENTS.FILLED_BUY_ORDER, updatedOrder);
-                }
-                if (updatedOrder.side === OrderSide.SELL) {
-                    this.FILLED_SELL_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
-                    this.emit(UPDATE_ORDER_STATUS_EVENTS.FILLED_SELL_ORDER, updatedOrder);
-                }
-            }
-
-            if (updatedOrder.status === OrderStatus.PARTIALLY_FILLED) {
-                if (updatedOrder.side === OrderSide.BUY) {
-                    this.FILLED_BUY_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
-                    this.emit(UPDATE_ORDER_STATUS_EVENTS.PARTIALLY_FILLED_BUY_ORDER, updatedOrder);
-                }
-                if (updatedOrder.side === OrderSide.SELL) {
-                    this.FILLED_SELL_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
-                    this.emit(UPDATE_ORDER_STATUS_EVENTS.PARTIALLY_FILLED_SELL_ORDER, updatedOrder);
-                }
-            }
-        } catch (err) {
-            clearInterval(intervalId);
-            console.error(`!!! Error in handleOpenOrder() !!!`);
-            console.error(err);
+    private logEvents(): void {
+        if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
+            this.on(UPDATE_ORDER_STATUS_EVENTS.FILLED_BUY_ORDER, (order: Order) => {
+                console.log(`\n--- FILLED BUY ORDER --- \nOrderID: ${order.id}\n` +
+                            `Quantity Filled:${order.quantityFilled} @ Rate:${order.rate}\n`);
+            });
+            this.on(UPDATE_ORDER_STATUS_EVENTS.PARTIALLY_FILLED_BUY_ORDER, (order: Order) => {
+                console.log(`\n--- PARTIALLY FILLED BUY ORDER --- \nOrderID: ${order.id}\n` +
+                            `Quantity Filled:${order.quantityFilled}\n` +
+                            `Qty Remaining: ${order.quantityRemaining}\n` +
+                            `@ Rate:${order.rate}\n`);
+            });
+            this.on(UPDATE_ORDER_STATUS_EVENTS.PARTIALLY_FILLED_SELL_ORDER, (order: Order) => {
+                console.log(`\n--- PARTIALLY FILLED SELL ORDER --- \nOrderID: ${order.id}\n` +
+                `Quantity Filled:${order.quantityFilled}\n` +
+                `Qty Remaining: ${order.quantityRemaining}\n` +
+                `@ Rate:${order.rate}\n`);
+            });
+            this.on(UPDATE_ORDER_STATUS_EVENTS.FILLED_SELL_ORDER, (order: Order) => {
+                console.log(`\n--- FILLED SELL ORDER --- \nOrderID: ${order.id}\n` +
+                            `Quantity Filled:${order.quantityFilled} @ Rate:${order.rate}\n`);
+            });
+            this.on(UPDATE_ORDER_STATUS_EVENTS.CANCELED_BUY_ORDER, (order: Order) => {
+                console.log(`\n--- CANCELED BUY ORDER --- \nOrderID: ${order.id}\n` +
+                            `Quantity Filled:${order.quantityFilled} Rate:${order.rate}\n`);
+            });
+            this.on(UPDATE_ORDER_STATUS_EVENTS.CANCELED_SELL_ORDER, (order: Order) => {
+                console.log(`\n--- CANCELED SELL ORDER --- \nOrderID: ${order.id}\n` +
+                            `Quantity Filled:${order.quantityFilled} Rate:${order.rate}\n`);
+            });
         }
     }
 

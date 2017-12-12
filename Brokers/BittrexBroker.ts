@@ -29,6 +29,9 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
 
     constructor() {
         super();
+        if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
+            this.logEvents();
+        }
     }
 
     public async buy(quote: Quote): Promise<Order> {
@@ -151,8 +154,6 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
         }
     }
 
-
-
     public async cancelOrder(orderId: string): Promise<string> {
         try {
             const cancelResponse = await bittrex.cancelAsync({uuid: orderId});
@@ -163,6 +164,11 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
             this.emit(OPEN_ORDER_EVENTS.OPEN_CANCEL_ORDER_EVENT, orderId);
             return orderId;
         } catch (err) {
+            if ((err === "ORDER_NOT_OPEN") || (err.message === "ORDER_NOT_OPEN")) {
+                if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
+                    console.log(`ORDER ALREADY CLOSED ${orderId}`);
+                }
+            }
             console.error(`\n!!! Error om BittrexBroker.cancelOrder() !!!`);
             console.error(err);
         }
@@ -176,70 +182,14 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
             }
             const order = orderResponse.result;
             // create Order object
-            let orderSide: OrderSide;
-            let orderType: OrderType;
-            switch (order.Type) {
-                case "LIMIT_BUY" : {
-                    orderSide = OrderSide.BUY;
-                    orderType = OrderType.LIMIT;
-                }
-                case "LIMIT_SELL" : {
-                    orderSide = OrderSide.SELL;
-                    orderType = OrderType.LIMIT;
-                }
-                case "CONDITIONAL_BUY" : {
-                    orderSide = OrderSide.BUY;
-                    orderType = OrderType.CONDITIONAL;
-                }
-                case "CONDITIONAL_SELL" : {
-                    orderSide = OrderSide.SELL;
-                    orderType = OrderType.CONDITIONAL;
-                }
-            }
-            let timeInEffect: OrderTimeEffect = OrderTimeEffect.GOOD_UNTIL_CANCELED;
-            if (order.ImmediateOrCancel) {
-                timeInEffect = OrderTimeEffect.IMMEDIATE_OR_CANCEL;
-            }
-            let orderStatus: OrderStatus = OrderStatus.OPEN;
-            if (order.CancelInitiated) {
-                orderStatus = OrderStatus.CANCELED;
-            }
-            if (order.Quantity !== order.QuantityRemaining) {
-                if (order.QuantityRemaining > 0) {
-                    orderStatus = OrderStatus.PARTIALLY_FILLED;
-                } else {
-                    orderStatus = OrderStatus.FILLED;
-                }
-            }
-            let orderCondition: OrderCondition;
-            if (order.IsConditional) {
-                switch (order.Condition) {
-                    case "GREATER_THAN_OR_EQUAL" : {
-                        orderCondition = OrderCondition.GREATER_THAN_OR_EQUAL;
-                        break;
-                    }
-                    case "LESS_THAN_OR_EQUAL" : {
-                        orderCondition = OrderCondition.LESS_THAN_OR_EQUAL;
-                        break;
-                    }
-                }
-            }
-            const orderObject = new Order(order.OrderUuid, order.Opened,
-                                          order.Exchange, order.Limit,
-                                          order.Quantity, orderSide,
-                                          orderType, timeInEffect,
-                                          false, orderStatus,
-                                          orderCondition, order.ConditionTarget);
-            if (orderStatus === OrderStatus.CANCELED) {
-                orderObject.cancel(order.Closed);
-            }
-            if (orderStatus !== (OrderStatus.OPEN || OrderStatus.CANCELED)) {
-                orderObject.fill(order.Quantity - order.QuantityRemaining, order.Closed);
-            }
+            const orderObject: Order = this.parseOrder(order);
             return orderObject;
         } catch (err) {
+            if (err.message === "URL request error") {
+                return;
+            }
             console.error(`\n!!! Error in BittrexBroker.getOrder() !!!`);
-            console.error(err);
+            console.error(err.message);
         }
     }
 
@@ -307,5 +257,95 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
             Target: quote.target ? quote.target : 0, // used in conjunction with ConditionType
         };
 
+    }
+
+    /**
+     * Parse Bittrex order into Order object
+     * @param order
+     */
+    private parseOrder(order): Order {
+        let orderSide: OrderSide;
+        let orderType: OrderType;
+        switch (order.Type) {
+            case "LIMIT_BUY" : {
+                orderSide = OrderSide.BUY;
+                orderType = OrderType.LIMIT;
+                break;
+            }
+            case "LIMIT_SELL" : {
+                orderSide = OrderSide.SELL;
+                orderType = OrderType.LIMIT;
+                break;
+            }
+            // TODO double check CONDITIONAL TYPE
+            case "CONDITIONAL_BUY" : {
+                orderSide = OrderSide.BUY;
+                orderType = OrderType.CONDITIONAL;
+                break;
+            }
+            case "CONDITIONAL_SELL" : {
+                orderSide = OrderSide.SELL;
+                orderType = OrderType.CONDITIONAL;
+                break;
+            }
+        }
+        let timeInEffect: OrderTimeEffect = OrderTimeEffect.GOOD_UNTIL_CANCELED;
+        if (order.ImmediateOrCancel) {
+            timeInEffect = OrderTimeEffect.IMMEDIATE_OR_CANCEL;
+        }
+        let orderStatus: OrderStatus = OrderStatus.OPEN;
+        if (order.CancelInitiated) {
+            orderStatus = OrderStatus.CANCELED;
+        }
+        if (order.Quantity !== order.QuantityRemaining) {
+            if (order.QuantityRemaining > 0) {
+                orderStatus = OrderStatus.PARTIALLY_FILLED;
+            } else {
+                orderStatus = OrderStatus.FILLED;
+            }
+        }
+        let orderCondition: OrderCondition;
+        if (order.IsConditional) {
+            switch (order.Condition) {
+                case "GREATER_THAN_OR_EQUAL" : {
+                    orderCondition = OrderCondition.GREATER_THAN_OR_EQUAL;
+                    break;
+                }
+                case "LESS_THAN_OR_EQUAL" : {
+                    orderCondition = OrderCondition.LESS_THAN_OR_EQUAL;
+                    break;
+                }
+            }
+        }
+        const orderObject = new Order(order.OrderUuid, order.Opened,
+                                      order.Exchange, order.Limit,
+                                      order.Quantity, orderSide,
+                                      orderType, timeInEffect,
+                                      false, orderStatus,
+                                      orderCondition, order.ConditionTarget);
+        if (orderStatus === OrderStatus.CANCELED) {
+            orderObject.cancel(order.Closed);
+        }
+        if (orderStatus !== (OrderStatus.OPEN || OrderStatus.CANCELED)) {
+            orderObject.fill(order.Quantity - order.QuantityRemaining, order.Closed);
+        }
+
+        return orderObject;
+    }
+
+    private logEvents(): void {
+        if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
+            this.on(OPEN_ORDER_EVENTS.OPEN_BUY_ORDER_EVENT, (order: Order) => {
+                console.log(`\n--- NEW OPEN BUY ORDER --- \nOrderID: ${order.id}\n` +
+                            `Quantity:${order.quantity} @ Rate:${order.rate}\n`);
+            });
+            this.on(OPEN_ORDER_EVENTS.OPEN_SELL_ORDER_EVENT, (order: Order) => {
+                console.log(`\n--- NEW OPEN SELL ORDER --- \nOrderID: ${order.id}\n` +
+                            `Quantity:${order.quantity} @ Rate:${order.rate}\n`);
+            });
+            this.on(OPEN_ORDER_EVENTS.OPEN_CANCEL_ORDER_EVENT, (orderId: string) => {
+                console.log(`\n--- NEW OPEN CANCEL ORDER --- \nOrderID: ${orderId}\n`);
+            });
+        }
     }
 }

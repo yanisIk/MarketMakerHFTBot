@@ -40,19 +40,25 @@ export default class OutBidEventHandler {
                 // Sell
                 this.broker.buy(outBidQuote);
             };
-
-            await cancelOrderPromise;
-            this.tickEventEmitter.on(order.marketName, tickListener);
-
-            if (CONFIG.BITTREX.IS_LOG_ACTIVE) {
-                console.log(`--- OUTBID DETECTED --- \nOrderID: ${order.id}\nSide:${order.side} Rate:${order.rate}\n`);
+            // if cancel failed and order partially or fully filled
+            try {
+                await cancelOrderPromise;
+                this.tickEventEmitter.on(order.marketName, tickListener);
+            } catch (err) {
+                console.log("!!! CANCEL FAILED IN OUTBIDEVENTHANDLER, NO RE OUTBID !!!\n ORDERID:", order.id);
+                if ((err === "ORDER_NOT_OPEN") || (err.message === "ORDER_NOT_OPEN")) {
+                    console.log("ORDER PROBABLY FILLED. \n ORDERID:", order.id);
+                }
             }
+
         });
     }
 
     private generateOutBidQuote(order: Order, tick: Tick): Quote {
-        const newBid = tick.bid + (tick.spread * 0.05);
-        return new Quote(order.marketName, newBid, order.quantityRemaining,
+        const newBid = tick.bid + (tick.spread * 0.01);
+        // TODO double check quantity settings
+        let quantity: number = order.quantityRemaining;
+        return new Quote(order.marketName, newBid, quantity,
                          OrderSide.BUY, OrderType.LIMIT, OrderTimeEffect.GOOD_UNTIL_CANCELED);
     }
 }

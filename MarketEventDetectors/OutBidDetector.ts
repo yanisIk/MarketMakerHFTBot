@@ -27,6 +27,9 @@ export default class OutBidDetector extends EventEmitter {
                 private ticksEmitter: ITickEventEmitter) {
         super();
         this.startDetection();
+        if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
+            this.logEvents();
+        }
     }
 
     /**
@@ -49,12 +52,16 @@ export default class OutBidDetector extends EventEmitter {
             // For each buy order, compare its bid to latest tick bid
             let tickListener: TickListener;
             let canceledOrderListener: OrderListener;
-            let filledOrderListener: OrderListener;
+            let filledBuyOrderListener: OrderListener;
+            let partiallyFilledBuyOrderListener: OrderListener;
 
             const cleanListeners = () => {
                 this.ticksEmitter.removeListener(order.marketName, tickListener);
                 this.broker.OPEN_CANCEL_ORDER_EVENT_EMITTER.removeListener(order.id, canceledOrderListener);
-                this.filledOrdersEmitter.FILLED_BUY_ORDER_EVENT_EMITTER.removeListener(order.id, filledOrderListener);
+                this.filledOrdersEmitter.FILLED_BUY_ORDER_EVENT_EMITTER.removeListener(order.id,
+                                                                                        filledBuyOrderListener);
+                this.filledOrdersEmitter.PARTIALLY_FILLED_BUY_ORDER_EVENT_EMITTER.removeListener(order.id,
+                    partiallyFilledBuyOrderListener);
             };
 
             // If outbid detected, emit it and remove listener
@@ -63,6 +70,7 @@ export default class OutBidDetector extends EventEmitter {
             tickListener = (tick: Tick) =>  {
                 if (tick.bid > order.rate) {
                     cleanListeners();
+                    // TODO: order could be already partially filled, sending the original order will be the incorrect amount
                     this.emit(OutBidDetector.OUTBID_ORDER_EVENT, order);
                 }
                 if (lastAsk && lastAsk > tick.ask) {
@@ -70,8 +78,10 @@ export default class OutBidDetector extends EventEmitter {
                     if (numberOfTimesLowerAsk === 5) {
                         cleanListeners();
                         this.broker.cancelOrder(order.id);
-                        if (CONFIG.BITTREX.IS_LOG_ACTIVE) {
-                            console.log(`----- FALLING ASK, CANCELING BUY ORDER ${order.id} -----`);
+                        setTimeout(() => this.emit(OutBidDetector.OUTBID_ORDER_EVENT, order), 2000);
+                        if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
+                            console.log(`\n--- FALLING ASK, CANCELING BUY ORDER ${order.id}\n` +
+                                        `REOUTBID WITH NEW LOWER BID IN 2 SECONDES... ---\n`);
                         }
                     }
                 }
@@ -86,16 +96,30 @@ export default class OutBidDetector extends EventEmitter {
 
             // For each filled order, check if is same as actual monitored order
             // If same, remove listeners;
-            filledOrderListener = (filledOrder: Order) => {
+            filledBuyOrderListener = (filledBuyOrder: Order) => {
                 cleanListeners();
+            };
+
+            // Update order when partiallyFilled
+            partiallyFilledBuyOrderListener = (partiallyFilledOrder: Order) => {
+                partiallyFilledOrder.isSpam = order.isSpam;
+                order = partiallyFilledOrder;
             };
 
             // Begin to listen
             this.ticksEmitter.on(order.marketName, tickListener);
             this.broker.OPEN_CANCEL_ORDER_EVENT_EMITTER.on(order.id, canceledOrderListener);
-            this.filledOrdersEmitter.FILLED_BUY_ORDER_EVENT_EMITTER.on(order.id, filledOrderListener);
-
+            this.filledOrdersEmitter.FILLED_BUY_ORDER_EVENT_EMITTER.on(order.id, filledBuyOrderListener);
+            this.filledOrdersEmitter.PARTIALLY_FILLED_BUY_ORDER_EVENT_EMITTER.on(order.id, partiallyFilledBuyOrderListener);
         });
+    }
+
+    private logEvents(): void {
+        if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
+            this.on(OutBidDetector.OUTBID_ORDER_EVENT, (order: Order) => {
+                console.log(`\n--- OUTBIDED ORDER ${order.id} ---\n`);
+            })
+        }
     }
 
 }

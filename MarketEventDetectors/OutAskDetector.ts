@@ -23,11 +23,14 @@ export default class OutAskDetector extends EventEmitter {
 
     public static readonly OUTASK_ORDER_EVENT: string = "OUTASK_ORDER_EVENT";
 
-    constructor(private openOrdersEmitter: IBroker,
+    constructor(private broker: IBroker,
                 private filledOrdersEmitter: OpenOrdersStatusDetector,
                 private ticksEmitter: ITickEventEmitter) {
         super();
         this.startDetection();
+        if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
+            this.logEvents();
+        }
     }
 
     /**
@@ -41,7 +44,7 @@ export default class OutAskDetector extends EventEmitter {
      */
     private startDetection(): void {
         // Listen to open sell orders
-        this.openOrdersEmitter.on(OPEN_ORDER_EVENTS.OPEN_SELL_ORDER_EVENT, async (order: Order) => {
+        this.broker.on(OPEN_ORDER_EVENTS.OPEN_SELL_ORDER_EVENT, async (order: Order) => {
 
             // Wait a little before starting monitoring, which will most probably lead to cancel spam orders
             if (order.isSpam) {
@@ -53,12 +56,16 @@ export default class OutAskDetector extends EventEmitter {
             // For each sell order, compare its ask to latest tick ask
             let tickListener: TickListener;
             let canceledOrderListener: OrderListener;
-            let filledOrderListener: OrderListener;
+            let filledSellOrderListener: OrderListener;
+            let partiallyFilledSellOrderListener: OrderListener;
 
             const cleanListeners = () => {
                 this.ticksEmitter.removeListener(order.marketName, tickListener);
-                this.openOrdersEmitter.OPEN_CANCEL_ORDER_EVENT_EMITTER.removeListener(order.id, canceledOrderListener);
-                this.filledOrdersEmitter.FILLED_SELL_ORDER_EVENT_EMITTER.removeListener(order.id, filledOrderListener);
+                this.broker.OPEN_CANCEL_ORDER_EVENT_EMITTER.removeListener(order.id, canceledOrderListener);
+                this.filledOrdersEmitter.FILLED_SELL_ORDER_EVENT_EMITTER.removeListener(order.id,
+                                                                                        filledSellOrderListener);
+                this.filledOrdersEmitter.PARTIALLY_FILLED_SELL_ORDER_EVENT_EMITTER.removeListener(order.id,
+                    partiallyFilledSellOrderListener);
             };
 
             // If outask detected, emit it and remove listener
@@ -77,16 +84,31 @@ export default class OutAskDetector extends EventEmitter {
 
             // For each filled order, check if is same as actual monitored order
             // If same, remove listeners;
-            filledOrderListener = (filledOrder: Order) => {
+            filledSellOrderListener = (filledOrder: Order) => {
                 cleanListeners();
+            };
+
+            // Update order when partiallyFilled
+            partiallyFilledSellOrderListener = (partiallyFilledOrder: Order) => {
+                partiallyFilledOrder.isSpam = order.isSpam;
+                order = partiallyFilledOrder;
             };
 
             // Begin to listen
             this.ticksEmitter.on(order.marketName, tickListener);
-            this.openOrdersEmitter.OPEN_CANCEL_ORDER_EVENT_EMITTER.on(order.id, canceledOrderListener);
-            this.filledOrdersEmitter.FILLED_SELL_ORDER_EVENT_EMITTER.on(order.id, filledOrderListener);
+            this.broker.OPEN_CANCEL_ORDER_EVENT_EMITTER.on(order.id, canceledOrderListener);
+            this.filledOrdersEmitter.FILLED_SELL_ORDER_EVENT_EMITTER.on(order.id, filledSellOrderListener);
+            this.filledOrdersEmitter.PARTIALLY_FILLED_SELL_ORDER_EVENT_EMITTER.on(order.id, partiallyFilledSellOrderListener);
 
         });
+    }
+
+    private logEvents(): void {
+        if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
+            this.on(OutAskDetector.OUTASK_ORDER_EVENT, (order: Order) => {
+                console.log(`\n--- OUTASKED ORDER ${order.id} ---\n`);
+            });
+        }
     }
 
 }

@@ -28,9 +28,10 @@ export default class BuyFilledEventHandler {
     }
 
     private startMonitoring(): void {
-        this.openOrdersStatusDetector.on(UPDATE_ORDER_STATUS_EVENTS.FILLED_BUY_ORDER, this.handleFilledBuyOrder);
+        this.openOrdersStatusDetector.on(UPDATE_ORDER_STATUS_EVENTS.FILLED_BUY_ORDER,
+                                        (order: Order) => this.handleFilledBuyOrder(order));
         this.openOrdersStatusDetector.on(UPDATE_ORDER_STATUS_EVENTS.PARTIALLY_FILLED_BUY_ORDER,
-                                         this.handlePartiallyFilledBuyOrder);
+                                         (order: Order) => this.handlePartiallyFilledBuyOrder(order));
     }
 
     private handleFilledBuyOrder(order: Order) {
@@ -46,10 +47,6 @@ export default class BuyFilledEventHandler {
         };
 
         this.tickEventEmitter.on(order.marketName, tickListener);
-
-        if (CONFIG.BITTREX.IS_LOG_ACTIVE) {
-            console.log(`--- FILLED BUY ORDER --- \n${order.quantityFilled} @ ${order.rate}\n`);
-        }
     }
 
     private handlePartiallyFilledBuyOrder(order: Order) {
@@ -68,15 +65,12 @@ export default class BuyFilledEventHandler {
         };
 
         this.tickEventEmitter.on(order.marketName, tickListener);
-
-        if (CONFIG.BITTREX.IS_LOG_ACTIVE) {
-            console.log(`--- PARTIALLY FILLED BUY ORDER --- \n${order.quantityFilled} @ ${order.rate} (${order.quantityRemaining} remaining)\n`);
-        }
     }
 
     private generateOutAskQuote(order: Order, tick: Tick): Quote {
-        const newAsk = tick.ask - (tick.spread * 0.05);
-        return new Quote(order.marketName, newAsk, order.quantityFilled,
+        const newAsk: number = tick.ask - (tick.spread * 0.01);
+        let quantity: number = order.quantityFilled;
+        return new Quote(order.marketName, newAsk, quantity,
                          OrderSide.SELL, OrderType.LIMIT, OrderTimeEffect.GOOD_UNTIL_CANCELED);
     }
 

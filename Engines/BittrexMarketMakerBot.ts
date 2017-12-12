@@ -1,5 +1,5 @@
 import BittrexBroker from "../Brokers/BittrexBroker";
-import IBroker from "../Brokers/IBroker";
+import IBroker, { OPEN_ORDER_EVENTS } from "../Brokers/IBroker";
 
 import * as CONFIG from "../Config/CONFIG";
 
@@ -34,7 +34,9 @@ export default class BittrexMarketMakerBot {
     private sellFilledHandler: SellFilledEventHandler;
 
     constructor(public readonly marketName: string) {
+        console.log("SETTING UP EVENTS PIPELINES...");
         this.setUpPipeline();
+        console.log("EVENTS PIPELINES READY");
     }
 
     /**
@@ -63,33 +65,41 @@ export default class BittrexMarketMakerBot {
     public start(): void {
 
         // return;
+        console.log("STARTING !");
 
-        let startQuantity = 0;
-        if (this.marketName.split("-")[0] === "BTC") {
-            startQuantity = CONFIG.BITTREX.MIN_QTY_TO_TRADE[this.marketName] * 6;
-        }
+        // console.log("TEST OPEN ORDER HANDLER BY EMITTING FAKE OPEN BUY ORDER (ALREADY OPENED)");
+        // const testOrderId = "78bdcf01-ef7a-4727-be10-b953b24020af";
+        // this.broker.emit(OPEN_ORDER_EVENTS.OPEN_BUY_ORDER_EVENT, {id: testOrderId});
 
-        if (!startQuantity) {
-            throw new Error("NO START QUANTITY FOR " + this.marketName);
-        }
-
-        
-        let x = 0;
         // 1st outbid
         let tickListener: (tick: Tick) => void;
         tickListener = (tick: Tick): void => {
-            console.log("FIRST TICK", tick);
             // Clean listener
             this.tickEmitter.removeListener(this.marketName, tickListener);
+
+            // Log first tick
+            console.log(`First Tick: \n${JSON.stringify(tick)}\nSpread: ${tick.spreadPercentage}`);
+
             // Generate outBid quote
-            const newBid: number = tick.bid + (tick.spread * 0.05);
+            const basecoin = this.marketName.split("-")[0];
+            let MIN_QUANTITY: number = 0;
+            switch (basecoin) {
+                case "BTC" : {
+                    MIN_QUANTITY = CONFIG.BITTREX.START_BTC_QUANTITY;
+                    break;
+                }
+                case "ETH" : {
+                    MIN_QUANTITY = CONFIG.BITTREX.START_ETH_QUANTITY;
+                    break;
+                }
+            } 
+            const newBid: number = tick.bid + (tick.spread * 0.01);
+            const startQuantity = MIN_QUANTITY / newBid;
             const outBidQuote = new Quote(this.marketName, newBid, startQuantity,
                                         OrderSide.BUY, OrderType.LIMIT, OrderTimeEffect.GOOD_UNTIL_CANCELED);
-            console.log("FIRST QUOTE", outBidQuote);
+            console.log("\n FIRST QUOTE:\n", outBidQuote);
             // Buy
             this.broker.buy(outBidQuote);
-            x++;
-            console.log('!!!!!!!!!!!!!---------', x, 'BUY ----------!!!!!!!!!!!!!!');
         };
         this.tickEmitter.on(this.marketName, tickListener);
 

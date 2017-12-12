@@ -42,11 +42,19 @@ export default class BittrexTickEventEmitter extends EventEmitter implements ITi
     }
 
     private async getTicker(marketName: string): Promise<Tick> {
-        const ticker = await bittrex.gettickerAsync({market: marketName})
-        if (!ticker.result) {
-            throw new Error(ticker.message);
+        try {
+            const ticker = await bittrex.gettickerAsync({market: marketName})
+            if (!ticker.result) {
+                throw new Error(ticker.message);
+            }
+            return new Tick(marketName, ticker.result.Bid, ticker.result.Ask, ticker.result.Last);
+        } catch (err) {
+            if (err.message === "URL request error") {
+                return;
+            }
+            console.error(`!!! ERROR IN GETTICKER() !!!`);
+            console.error(err);
         }
-        return new Tick(marketName, ticker.result.Bid, ticker.result.Ask, ticker.result.Last);
     }
 
 }

@@ -1,5 +1,5 @@
 !Important! Note
-----
+---
 
 This is a maintained fork of the original package. **The npm package name has
 changed** because we could not get access to the npmjs repository to keep it
@@ -23,7 +23,7 @@ This Library is licensed under the [MIT license](https://github.com/dparlevliet/
 
 
 Contributors
-----
+---
 Thanks go to the people who have contributed code to this Library.
 
 * [n0mad01](https://github.com/n0mad01) Special kudos - the original creator of the library. Thanks for the hard work.
@@ -37,7 +37,7 @@ Thanks go to the people who have contributed code to this Library.
 
 
 Before you start
-----
+---
 This is just a quick reminder that you are handling coins with this library (and thus real money), so, understand the situation as much as possible and make everything to prevent losing them.
 
 Here is a small checklist you should go through before you start:
@@ -56,7 +56,7 @@ Here is a small checklist you should go through before you start:
 
 
 Quick start
-----
+---
 ```sh
 $ npm install node-bittrex-api
 ```
@@ -81,7 +81,7 @@ bittrex.getmarketsummaries( function( data, err ) {
 
 
 Advanced start
-----
+---
 
 fetch the project via git:
 ```sh
@@ -373,7 +373,7 @@ bittrex.getcandles({
 
 
 Methods
-----
+---
 
 Optional parameters may have to be looked up at https://bittrex.com/Home/Api.
 
@@ -483,7 +483,7 @@ bittrex.withdraw({ currency : 'BTC', quantity : '1.5112', address : 'THE_ADDRESS
 
 
 Supported v2 API methods
-------
+---
 
 Little is known about the v2 api at present. We have support for only a few methods
 with very little documentation. Given that the v2 api is still indevelopment by
@@ -531,7 +531,7 @@ bittrex.tradebuy({
 
 
 Testing
-----
+---
 
 Installing test gear
 ```bash

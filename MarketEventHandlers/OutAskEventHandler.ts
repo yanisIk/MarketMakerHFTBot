@@ -40,19 +40,22 @@ export default class OutAskEventHandler {
                 // Sell
                 this.broker.sell(outaskQuote);
             };
-
-            await cancelOrderPromise;
-            this.tickEventEmitter.on(order.marketName, tickListener);
-
-            if (CONFIG.BITTREX.IS_LOG_ACTIVE) {
-                console.log(`--- OUTASK DETECTED --- \nOrderID: ${order.id}\nSide:${order.side} Rate:${order.rate}\n`);
+            try {
+                await cancelOrderPromise;
+                this.tickEventEmitter.on(order.marketName, tickListener);
+            } catch (err) {
+                console.log("!!! CANCEL FAILED IN OUTASKEVENTHANDLER, NO RE OUTBID !!!\n ORDERID:", order.id);
+                if ((err === "ORDER_NOT_OPEN") || (err.message === "ORDER_NOT_OPEN")) {
+                    console.log("ORDER PROBABLY FILLED. \n ORDERID:", order.id);
+                }
             }
         });
     }
 
     private generateOutAskQuote(order: Order, tick: Tick): Quote {
-        const newAsk = tick.ask - (tick.spread * 0.01);
-        return new Quote(order.marketName, newAsk, order.quantityRemaining,
+        const newAsk: number = tick.ask - (tick.spread * 0.01);
+        let quantity: number = order.quantityRemaining;
+        return new Quote(order.marketName, newAsk, quantity,
                          OrderSide.SELL, OrderType.LIMIT, OrderTimeEffect.GOOD_UNTIL_CANCELED);
     }
 }

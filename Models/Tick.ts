@@ -13,6 +13,6 @@ export default class Tick {
     }
 
     public get spreadPercentage(): number {
-        return (this.spread) / this.ask;
+        return ((this.spread) / this.ask) * 100;
     }
 }

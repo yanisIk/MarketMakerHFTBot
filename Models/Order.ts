@@ -10,7 +10,7 @@ export default class Order extends Quote {
     }
 
     public closedTimestamp: number | Date;
-    public quantityFilled: number;
+    public quantityFilled: number = 0;
     public quantityRemaining: number;
 
     constructor(public readonly id: string,
@@ -21,7 +21,7 @@ export default class Order extends Quote {
                 public readonly side: OrderSide,
                 public readonly type: OrderType,
                 public readonly timeEffect: OrderTimeEffect,
-                public readonly isSpam: boolean,
+                public isSpam: boolean,
                 public status: OrderStatus,
                 public readonly condition?: OrderCondition,
                 public readonly target?: number,
@@ -30,18 +30,22 @@ export default class Order extends Quote {
             this.quantityRemaining = this.quantity;
     }
 
-    public fill(quantityFilled: number, closeTimestamp: number): void {
+    public fill(quantityFilled: number, closedTimestamp: number | Date): void {
+        if (quantityFilled === 0) {
+            return;
+        }
         this.quantityFilled = quantityFilled;
         if (this.quantityFilled === this.quantity) {
             this.status = OrderStatus.FILLED;
             this.quantityRemaining = 0;
+            this.closedTimestamp = closedTimestamp;
         } else {
             this.status = OrderStatus.PARTIALLY_FILLED;
             this.quantityRemaining = this.quantity - quantityFilled;
         }
     }
 
-    public cancel(closedTimestamp: number): void {
+    public cancel(closedTimestamp: number | Date): void {
         this.status = OrderStatus.CANCELED;
         this.closedTimestamp = closedTimestamp;
     }
