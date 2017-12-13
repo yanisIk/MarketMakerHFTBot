@@ -81,15 +81,7 @@ export default class OpenOrdersStatusDetector extends EventEmitter {
 
         // FILLED ORDERS
         if (updatedOrder.status === OrderStatus.FILLED) {
-            if (updatedOrder.side === OrderSide.BUY) {
-                this.FILLED_BUY_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
-                this.emit(UPDATE_ORDER_STATUS_EVENTS.FILLED_BUY_ORDER, updatedOrder);
-            }
-            if (updatedOrder.side === OrderSide.SELL) {
-                this.FILLED_SELL_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
-                this.emit(UPDATE_ORDER_STATUS_EVENTS.FILLED_SELL_ORDER, updatedOrder);
-            }
-            this.lastPartialOrders.delete(updatedOrder.id);
+            this.handleFilledOrder(updatedOrder);
         }
 
         // PARTIALLY FILLED ORDERS
@@ -99,6 +91,26 @@ export default class OpenOrdersStatusDetector extends EventEmitter {
         }
 
         return updatedOrder;
+    }
+
+    /**
+     * Check if was partial order before and adjust filled quantity with partialFill
+     * @param updatedOrder
+     */
+    private handleFilledOrder(updatedOrder: Order): void {
+        const lastPartialOrder = this.lastPartialOrders.get(updatedOrder.id);
+        if (lastPartialOrder) {
+            updatedOrder.partialFill = updatedOrder.quantityFilled - lastPartialOrder.quantityFilled;
+        }
+        if (updatedOrder.side === OrderSide.BUY) {
+            this.FILLED_BUY_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
+            this.emit(UPDATE_ORDER_STATUS_EVENTS.FILLED_BUY_ORDER, updatedOrder);
+        }
+        if (updatedOrder.side === OrderSide.SELL) {
+            this.FILLED_SELL_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
+            this.emit(UPDATE_ORDER_STATUS_EVENTS.FILLED_SELL_ORDER, updatedOrder);
+        }
+        this.lastPartialOrders.delete(updatedOrder.id);
     }
 
     /**
@@ -120,11 +132,11 @@ export default class OpenOrdersStatusDetector extends EventEmitter {
     private handlePartialFill(updatedOrder: Order): void {
         const lastPartialOrder = this.lastPartialOrders.get(updatedOrder.id);
         if (!lastPartialOrder) {
-            updatedOrder.partialFill = updatedOrder.quantityFilled; 
+            updatedOrder.partialFill = updatedOrder.quantityFilled;
         } else if (updatedOrder.quantityRemaining === lastPartialOrder.quantityRemaining) {
             return;
         } else {
-            updatedOrder.partialFill = updatedOrder.quantityFilled - lastPartialOrder.partialFill;
+            updatedOrder.partialFill = updatedOrder.quantityFilled - lastPartialOrder.quantityFilled;
         }
 
         this.lastPartialOrders.set(updatedOrder.id, updatedOrder);

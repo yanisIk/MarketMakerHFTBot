@@ -15,6 +15,7 @@ BUY ORDER:
 
   TEST: Manage partial quantities over time (how to get filled amount from the already partial field order)
 
+TODO: FIX: WHEN ORDER FILLED JUST BEFORE CANCEL, MONITORING STOPS AND DOESNT EMIT FILLED ORDER AND BOT DOESNT CONTINUE
 
 TODO: LOGS FOR SELL ORDER IN OUTBID DETECTOR FIX
 
@@ -43,3 +44,23 @@ OrderID: fd3050c9-a2fe-46cd-96e5-523856c511f3
 Quantity:0.8332124564249049 @ Rate:0.0300113277
 
 SELL ORDER IN OUTBID DETECTOR
+
+
+
+TODO: FIX: canceled order wasn't really canceled, got filled but program didnt continue
+
+--- NEW OPEN SELL ORDER [USDT-OMG] ---
+OrderID: b93381eb-e0c0-404e-bb18-7bc6c6d6729f
+Quantity:1.0366587 @ Rate:9.711296537900001
+
+
+--- OUTASKED ORDER ---
+OrderID: b93381eb-e0c0-404e-bb18-7bc6c6d6729f
+Quantity:1.0366587 @ Rate:9.711296537900001
+
+!!! ORDER ALREADY CLOSED (Probably Filled ?) !!!
+ORDERID: b93381eb-e0c0-404e-bb18-7bc6c6d6729f
+
+--- CANCELLED SELL ORDER [USDT-OMG] ---
+OrderID: b93381eb-e0c0-404e-bb18-7bc6c6d6729f
+Quantity Filled:0 Rate:9.71129653

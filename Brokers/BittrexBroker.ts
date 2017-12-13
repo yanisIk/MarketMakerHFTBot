@@ -184,7 +184,7 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
             return orderObject;
         } catch (err) {
             if (err.message === "URL request error") {
-                return;
+                return this.getOrder(orderId);
             }
             console.error(`\n!!! Error in BittrexBroker.getOrder() !!!`);
             console.error(err.message);
@@ -292,7 +292,7 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
             timeInEffect = OrderTimeEffect.IMMEDIATE_OR_CANCEL;
         }
         let orderStatus: OrderStatus = OrderStatus.OPEN;
-        if (order.CancelInitiated) {
+        if ( (order.IsOpen === false) && (order.QuantityRemaining !== 0) ) {
             orderStatus = OrderStatus.CANCELED;
         }
         if (order.Quantity !== order.QuantityRemaining) {
@@ -334,11 +334,11 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
     private logEvents(): void {
         if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
             this.on(OPEN_ORDER_EVENTS.OPEN_BUY_ORDER_EVENT, (order: Order) => {
-                console.log(`\n--- NEW OPEN BUY ORDER --- \nOrderID: ${order.id}\n` +
+                console.log(`\n--- NEW OPEN BUY ORDER [${order.marketName}] --- \nOrderID: ${order.id}\n` +
                             `Quantity:${order.quantity} @ Rate:${order.rate}\n`);
             });
             this.on(OPEN_ORDER_EVENTS.OPEN_SELL_ORDER_EVENT, (order: Order) => {
-                console.log(`\n--- NEW OPEN SELL ORDER --- \nOrderID: ${order.id}\n` +
+                console.log(`\n--- NEW OPEN SELL ORDER [${order.marketName}] --- \nOrderID: ${order.id}\n` +
                             `Quantity:${order.quantity} @ Rate:${order.rate}\n`);
             });
             this.on(OPEN_ORDER_EVENTS.OPEN_CANCEL_ORDER_EVENT, (orderId: string) => {
