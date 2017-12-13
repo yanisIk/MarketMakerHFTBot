@@ -15,52 +15,8 @@ BUY ORDER:
 
   TEST: Manage partial quantities over time (how to get filled amount from the already partial field order)
 
-TODO: FIX: WHEN ORDER FILLED JUST BEFORE CANCEL, MONITORING STOPS AND DOESNT EMIT FILLED ORDER AND BOT DOESNT CONTINUE
+TODO: Manage outask when ask goes too low (compared to buy rate)
+sometimes, another bot will outask drastically and the ask will become same as what I bidded
+risks: waiting for ask to go back up ? => not seliing
 
-TODO: LOGS FOR SELL ORDER IN OUTBID DETECTOR FIX
-
-  --- NEW OPEN BUY ORDER ---
-OrderID: 073e9d10-a667-4d5c-9cad-f48602a02847
-Quantity:0.8332124564249049 @ Rate:0.0300043522
-
-
---- OUTBIDED ORDER ---
-OrderID: 073e9d10-a667-4d5c-9cad-f48602a02847
-Quantity:0.8332124564249049 @ Rate:0.0300043522
-
-
---- NEW OPEN CANCEL ORDER ---
-OrderID: 073e9d10-a667-4d5c-9cad-f48602a02847
-
---- OUTBID SPREAD: 1.4541044287179532 % ---
-
---- CANCELED BUY ORDER ---
-OrderID: 073e9d10-a667-4d5c-9cad-f48602a02847
-Quantity Filled:0 Rate:0.03000435
-
-
---- NEW OPEN BUY ORDER ---
-OrderID: fd3050c9-a2fe-46cd-96e5-523856c511f3
-Quantity:0.8332124564249049 @ Rate:0.0300113277
-
-SELL ORDER IN OUTBID DETECTOR
-
-
-
-TODO: FIX: canceled order wasn't really canceled, got filled but program didnt continue
-
---- NEW OPEN SELL ORDER [USDT-OMG] ---
-OrderID: b93381eb-e0c0-404e-bb18-7bc6c6d6729f
-Quantity:1.0366587 @ Rate:9.711296537900001
-
-
---- OUTASKED ORDER ---
-OrderID: b93381eb-e0c0-404e-bb18-7bc6c6d6729f
-Quantity:1.0366587 @ Rate:9.711296537900001
-
-!!! ORDER ALREADY CLOSED (Probably Filled ?) !!!
-ORDERID: b93381eb-e0c0-404e-bb18-7bc6c6d6729f
-
---- CANCELLED SELL ORDER [USDT-OMG] ---
-OrderID: b93381eb-e0c0-404e-bb18-7bc6c6d6729f
-Quantity Filled:0 Rate:9.71129653
+TODO: Manage request timeouts for buy sell and cancel

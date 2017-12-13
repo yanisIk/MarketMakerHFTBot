@@ -7,7 +7,7 @@ import Tick from "../Models/Tick";
 import * as CONFIG from "./../Config/CONFIG";
 import IBroker, { OPEN_ORDER_EVENTS } from "./IBroker";
 
-const bittrexClient = require("node-bittrex-api");
+const bittrexClient = require("../../CustomExchangeClients/node-bittrex-api");
 const bittrex = Bluebird.promisifyAll(bittrexClient);
 bittrex.options({
     apikey : process.env.BITTREX_API_KEY,

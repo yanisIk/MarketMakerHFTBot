@@ -15,7 +15,9 @@
     "@types/bluebird": "^3.5.18",
     "@types/dotenv-safe": "^4.0.1",
     "@types/lodash": "^4.14.88",
-    "@types/node": "^8.0.57"
+    "@types/node": "^8.0.57",
+    "tslint": "^5.8.0",
+    "typescript": "^2.6.2"
   },
   "dependencies": {
     "async": "^2.6.0",

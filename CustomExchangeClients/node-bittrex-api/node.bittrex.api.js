@@ -40,7 +40,7 @@ var NodeBittrexApi = function() {
       websockets: {
         autoReconnect: true,
       },
-      requestTimeoutInSeconds: 1,
+      requestTimeoutInSeconds: 5,
     };
   
     var lastNonce = 0;
