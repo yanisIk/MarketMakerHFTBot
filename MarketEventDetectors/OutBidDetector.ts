@@ -57,11 +57,6 @@ export default class OutBidDetector extends EventEmitter {
                                     setTimeout(resolve, CONFIG.BITTREX.SPAM_ORDER_MONITORING_DELAY_IN_MS));
             }
 
-            // TODO FIX
-            if (buyOrder.side === OrderSide.SELL) {
-                console.log("SELL ORDER IN OUTBID DETECTOR");
-            }
-
             // Register as monitored buyOrder
             OutBidDetector.monitoredOrders.set(buyOrder.id, buyOrder);
 

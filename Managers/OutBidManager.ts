@@ -79,12 +79,7 @@ export default class OutBidManager {
             }
         }
 
-        // TEST TODO FIX quantity = 0 when 2nd outbid (order transformed to side=1 (SELL) order)
-        if (!quantity) {
-            console.log(order);
-        }
-
         return new Quote(order.marketName, newBid, quantity,
-                         OrderSide.SELL, OrderType.LIMIT, OrderTimeEffect.GOOD_UNTIL_CANCELED);
+                         OrderSide.BUY, OrderType.LIMIT, OrderTimeEffect.GOOD_UNTIL_CANCELED);
     }
 }
