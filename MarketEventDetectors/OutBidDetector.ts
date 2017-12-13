@@ -95,13 +95,11 @@ export default class OutBidDetector extends EventEmitter {
                         cleanListeners();
                         // Remove from monitored buyOrders
                         OutBidDetector.monitoredOrders.delete(buyOrder.id);
-                        // Cancel buyOrder to do buy sell new one
-                        this.broker.cancelOrder(buyOrder.id);
-                        // Wait 2s for the ask to stabilize then emit outbid
-                        setTimeout(() => this.emit(OutBidDetector.OUTBID_ORDER_EVENT, buyOrder), 2000);
+                        // Re outbid to still be near the bid
+                        this.emit(OutBidDetector.OUTBID_ORDER_EVENT, buyOrder);
                         if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
-                            console.log(`\n--- FALLING ASK, CANCELING BUY ORDER ${buyOrder.id}\n` +
-                                        `REOUTBID WITH NEW LOWER BID IN 2 SECONDES... ---\n`);
+                            console.log(`\n--- FALLING ASK, CANCELING BUY ORDER TO BACK OFF ${buyOrder.id} --- ` +
+                                        `\nREOUTBID WITH NEW LOWER BID \n`);
                         }
                     }
                 }

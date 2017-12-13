@@ -99,7 +99,11 @@ export default class BittrexMarketMakerBot {
                     MIN_QUANTITY = CONFIG.BITTREX.START_ETH_QUANTITY;
                     break;
                 }
-            } 
+                case "USDT" : {
+                    MIN_QUANTITY = CONFIG.BITTREX.START_USDT_QUANTITY;
+                    break;
+                }
+            }
             const newBid: number = tick.bid + (tick.spread * 0.01);
             const startQuantity = MIN_QUANTITY / newBid;
             const outBidQuote = new Quote(this.marketName, newBid, startQuantity,

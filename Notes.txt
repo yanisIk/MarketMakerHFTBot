@@ -13,7 +13,7 @@ BUY ORDER:
   Quantity: 0.03393666,
   Rate: 0.027986925 }
 
-  TODO: Manage partial quantities over time (how to get filled amount from the already partial field order)
+  TEST: Manage partial quantities over time (how to get filled amount from the already partial field order)
 
 
 TODO: LOGS FOR SELL ORDER IN OUTBID DETECTOR FIX

@@ -19,17 +19,6 @@ import Tick from "../Models/Tick";
 
 export default class BuyFilledEventHandler {
 
-    // Key: orderId, Value: Last partial fill
-    /**
-     * First partial fill:
-     * - set order.quantityFilled
-     * - set order.partialFill = partial fill
-     * Second+ partial fill:
-     * - set order.quantityFilled - getValue = partial fill
-     * - set order.partialFill = partial fill
-     */
-    private lastPartialFills: Map<string, number> = new Map();
-
     constructor(private openOrdersStatusDetector: OpenOrdersStatusDetector,
                 private outAskManager: OutAskManager) {
         this.startMonitoring();
@@ -47,18 +36,6 @@ export default class BuyFilledEventHandler {
     }
 
     private handlePartiallyFilledBuyOrder(buyOrder: Order) {
-
-        const lastQuantityFilled = this.lastPartialFills.get(buyOrder.id);
-        // Already partial filled
-        if (lastQuantityFilled) {
-            const partialFill = buyOrder.quantityFilled - lastQuantityFilled;
-            this.lastPartialFills.set(buyOrder.id, partialFill);
-            buyOrder.partialFill = partialFill;
-        // First partial fill
-        } else {
-            this.lastPartialFills.set(buyOrder.id, buyOrder.quantityFilled);
-            buyOrder.partialFill = buyOrder.quantityFilled;
-        }
         this.outAskManager.outAsk(buyOrder);
     }
 

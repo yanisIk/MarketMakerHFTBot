@@ -33,15 +33,16 @@ export default class OutBidManager {
             if (spreadPercentage < CONFIG.BITTREX.MIN_SPREAD_PERCENTAGE) {
                 return;
             }
-            if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
-                console.log(`--- OUTBID SPREAD: ${spreadPercentage} % ---`);
-            }
             // Clean listener
             this.tickEventEmitter.removeListener(order.marketName, tickListener);
             // Generate outBid quote
             const outBidQuote = this.generateOutBidQuote(order, tick);
-            // Sell
+            // Buy
             this.broker.buy(outBidQuote);
+
+            if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
+                console.log(`--- OUTBID SPREAD: ${spreadPercentage} % ---`);
+            }
         };
 
         try {

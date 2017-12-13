@@ -80,13 +80,29 @@ export default class OutAskDetector extends EventEmitter {
             };
 
             // If outask detected, emit it and remove listener
+            let lastBid: number;
+            let numberOfHigherBid: number = 0;
             tickListener = (tick: Tick) =>  {
                 if (tick.ask < sellOrder.rate) {
                     cleanListeners();
                     // Remove from monitored orders
                     OutAskDetector.monitoredOrders.delete(sellOrder.id);
                     this.emit(OutAskDetector.OUTASK_ORDER_EVENT, sellOrder);
+                } else if (lastBid && lastBid > tick.bid) {
+                    numberOfHigherBid++;
+                    if (numberOfHigherBid === 5) {
+                        cleanListeners();
+                        // Remove from monitored buyOrders
+                        OutAskDetector.monitoredOrders.delete(sellOrder.id);
+                        // Re outbid to still be near the bid
+                        this.emit(OutAskDetector.OUTASK_ORDER_EVENT, sellOrder);
+                        if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
+                            console.log(`\n--- RISING BID, CANCELING SELL ORDER TO RISE ASK ${sellOrder.id} --- ` +
+                                        `\nREOUTASK WITH NEW HIGHER ASK \n`);
+                        }
+                    }
                 }
+                lastBid = tick.bid;
             };
 
             // check if sellOrder is canceled and stop monitoring

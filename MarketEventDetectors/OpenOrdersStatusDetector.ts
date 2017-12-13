@@ -18,6 +18,8 @@ export default class OpenOrdersStatusDetector extends EventEmitter {
     public readonly PARTIALLY_FILLED_SELL_ORDER_EVENT_EMITTER: EventEmitter = new EventEmitter();
     public readonly CANCELED_SELL_ORDER_EVENT_EMITTER: EventEmitter = new EventEmitter();
 
+    private readonly lastPartialOrders: Map<string, Order> = new Map();
+
     constructor(private broker: IBroker,
                 private watchIntervalInMs: number) {
         super();
@@ -87,22 +89,54 @@ export default class OpenOrdersStatusDetector extends EventEmitter {
                 this.FILLED_SELL_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
                 this.emit(UPDATE_ORDER_STATUS_EVENTS.FILLED_SELL_ORDER, updatedOrder);
             }
+            this.lastPartialOrders.delete(updatedOrder.id);
         }
 
         // PARTIALLY FILLED ORDERS
         if (updatedOrder.status === OrderStatus.PARTIALLY_FILLED) {
-            if (updatedOrder.side === OrderSide.BUY) {
-                this.FILLED_BUY_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
-                this.emit(UPDATE_ORDER_STATUS_EVENTS.PARTIALLY_FILLED_BUY_ORDER, updatedOrder);
-            }
-            if (updatedOrder.side === OrderSide.SELL) {
-                this.FILLED_SELL_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
-                this.emit(UPDATE_ORDER_STATUS_EVENTS.PARTIALLY_FILLED_SELL_ORDER, updatedOrder);
-            }
+            this.handlePartialFill(updatedOrder);
             throw new Error("PARTIAL FILL, CONTINUE TO MONITOR");
         }
 
         return updatedOrder;
+    }
+
+    /**
+     * Check if updatedOrder already existant partial fill
+     *
+     * First partial fill:
+     * - set updatedOrder.partialFill = updatedOrder.quantityFilled
+     * - register updatedOrder as lastPartialOrder
+     * - emit
+     *
+     * Second+ partial fill:
+     * - check if updatedOrder.quantityRemaining === lastPartialOrder.quantityRemaining
+     *   - If yes, return;
+     * - set updatedOrder.partialFill = updatedOrder.quantityFilled - lastPartialOrder.partialFill
+     * - emit
+     *
+     * @param updatedOrder
+     */
+    private handlePartialFill(updatedOrder: Order): void {
+        const lastPartialOrder = this.lastPartialOrders.get(updatedOrder.id);
+        if (!lastPartialOrder) {
+            updatedOrder.partialFill = updatedOrder.quantityFilled; 
+        } else if (updatedOrder.quantityRemaining === lastPartialOrder.quantityRemaining) {
+            return;
+        } else {
+            updatedOrder.partialFill = updatedOrder.quantityFilled - lastPartialOrder.partialFill;
+        }
+
+        this.lastPartialOrders.set(updatedOrder.id, updatedOrder);
+
+        if (updatedOrder.side === OrderSide.BUY) {
+            this.FILLED_BUY_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
+            this.emit(UPDATE_ORDER_STATUS_EVENTS.PARTIALLY_FILLED_BUY_ORDER, updatedOrder);
+        }
+        if (updatedOrder.side === OrderSide.SELL) {
+            this.FILLED_SELL_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
+            this.emit(UPDATE_ORDER_STATUS_EVENTS.PARTIALLY_FILLED_SELL_ORDER, updatedOrder);
+        }
     }
 
     private logEvents(): void {
@@ -117,15 +151,15 @@ export default class OpenOrdersStatusDetector extends EventEmitter {
                             `Qty Remaining: ${order.quantityRemaining}\n` +
                             `@ Rate:${order.rate}\n`);
             });
+            this.on(UPDATE_ORDER_STATUS_EVENTS.FILLED_SELL_ORDER, (order: Order) => {
+                console.log(`\n--- FILLED SELL ORDER [${order.marketName}] --- \nOrderID: ${order.id}\n` +
+                            `Quantity Filled:${order.quantityFilled} @ Rate:${order.rate}\n`);
+            });
             this.on(UPDATE_ORDER_STATUS_EVENTS.PARTIALLY_FILLED_SELL_ORDER, (order: Order) => {
                 console.log(`\n--- PARTIALLY FILLED SELL ORDER [${order.marketName}] --- \nOrderID: ${order.id}\n` +
                 `Quantity Filled:${order.quantityFilled}\n` +
                 `Qty Remaining: ${order.quantityRemaining}\n` +
                 `@ Rate:${order.rate}\n`);
-            });
-            this.on(UPDATE_ORDER_STATUS_EVENTS.FILLED_SELL_ORDER, (order: Order) => {
-                console.log(`\n--- FILLED SELL ORDER [${order.marketName}] --- \nOrderID: ${order.id}\n` +
-                            `Quantity Filled:${order.quantityFilled} @ Rate:${order.rate}\n`);
             });
             this.on(UPDATE_ORDER_STATUS_EVENTS.CANCELED_BUY_ORDER, (order: Order) => {
                 console.log(`\n--- CANCELLED BUY ORDER [${order.marketName}] --- \nOrderID: ${order.id}\n` +
