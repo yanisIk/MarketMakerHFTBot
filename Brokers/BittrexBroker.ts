@@ -45,6 +45,10 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
             this.emit(OPEN_ORDER_EVENTS.OPEN_BUY_ORDER_EVENT, order);
             return order;
         } catch (err) {
+            // Retry if Request Error due to network
+            if (err.message === "URL request error") {
+                return this.buy(quote);
+            }
             console.error(`\n!!! Error in BittrexBroker.buy() !!!`);
             console.error(err);
         }
@@ -61,6 +65,10 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
             this.emit(OPEN_ORDER_EVENTS.OPEN_SELL_ORDER_EVENT, order);
             return order;
         } catch (err) {
+            // Retry if Request Error due to network
+            if (err.message === "URL request error") {
+                return this.sell(quote);
+            }
             console.error(`\n!!! Error in BittrexBroker.sell() !!!`);
             console.error(err);
         }
@@ -164,6 +172,10 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
             this.emit(OPEN_ORDER_EVENTS.OPEN_CANCEL_ORDER_EVENT, orderId);
             return orderId;
         } catch (err) {
+            // Retry if Request Error due to network
+            if (err.message === "URL request error") {
+                return this.cancelOrder(orderId);
+            }
             if ((err === "ORDER_NOT_OPEN") || (err.message === "ORDER_NOT_OPEN")) {
                 throw new Error("ORDER_ALREADY_CLOSED");
             }
