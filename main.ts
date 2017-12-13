@@ -73,8 +73,3 @@ process.on("uncaughtException", (ex) => {
     console.error('!!!! Uncaught Exception thrown !!!!');
     console.error(ex);
 });
-
-/**
- * TODO
- * Graceful shutdown: cancel all open buy orders
- */

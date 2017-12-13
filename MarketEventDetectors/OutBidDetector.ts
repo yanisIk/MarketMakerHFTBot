@@ -65,6 +65,7 @@ export default class OutBidDetector extends EventEmitter {
             let canceledOrderListener: OrderListener;
             let filledBuyOrderListener: OrderListener;
             let partiallyFilledBuyOrderListener: OrderListener;
+            let gracefulShutdownListener: () => void;
 
             const cleanListeners = () => {
                 this.ticksEmitter.removeListener(buyOrder.marketName, tickListener);
@@ -73,6 +74,7 @@ export default class OutBidDetector extends EventEmitter {
                                                                                         filledBuyOrderListener);
                 this.filledOrdersEmitter.PARTIALLY_FILLED_BUY_ORDER_EVENT_EMITTER.removeListener(buyOrder.id,
                     partiallyFilledBuyOrderListener);
+                process.removeListener("SIGTERM", gracefulShutdownListener);
             };
 
             // If outbid detected, emit it and remove listener
@@ -121,12 +123,20 @@ export default class OutBidDetector extends EventEmitter {
                 buyOrder = partiallyFilledOrder;
             };
 
+            gracefulShutdownListener = () => {
+                cleanListeners();
+                // Cancel order
+                this.broker.cancelOrder(buyOrder.id);
+                console.log(`GRACEFUL SHUTDOWN: CANCELING OPEN BUY ORDER ${buyOrder.id}`);
+            };
+
             // Begin to listen
             this.ticksEmitter.on(buyOrder.marketName, tickListener);
             this.broker.OPEN_CANCEL_ORDER_EVENT_EMITTER.once(buyOrder.id, canceledOrderListener);
             this.filledOrdersEmitter.FILLED_BUY_ORDER_EVENT_EMITTER.once(buyOrder.id, filledBuyOrderListener);
             this.filledOrdersEmitter.PARTIALLY_FILLED_BUY_ORDER_EVENT_EMITTER
                                                         .on(buyOrder.id, partiallyFilledBuyOrderListener);
+            process.on("SIGTERM", gracefulShutdownListener);
         });
     }
 
