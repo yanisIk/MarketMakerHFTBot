@@ -19,4 +19,22 @@ TODO: Manage outask when ask goes too low (compared to buy rate)
 sometimes, another bot will outask drastically and the ask will become same as what I bidded
 risks: waiting for ask to go back up ? => not seliing
 
-TODO: Manage request timeouts for buy sell and cancel
+TODO: Manage request timeouts for buy sell and cancel (Done but not sure if right strategy)
+
+TODO: FIX: log below shows that order has been outasked,
+           then already closed when trying to cancel it,
+           then cancelled (???)
+           then nothing ? no fill ?
+      HINT: look at OutAskManager (just after cancel)
+
+--- OUTASKED ORDER ---
+OrderID: a23aecc6-3e50-4215-bb5a-34d3324ad88b
+Quantity:0.93725747 @ Rate:10.6694246727
+
+!!! ORDER ALREADY CLOSED (Probably Filled ?) !!!
+ORDERID: a23aecc6-3e50-4215-bb5a-34d3324ad88b
+
+--- CANCELLED SELL ORDER [USDT-OMG] ---
+OrderID: a23aecc6-3e50-4215-bb5a-34d3324ad88b
+Quantity Filled:0 Rate:10.66942467
+
