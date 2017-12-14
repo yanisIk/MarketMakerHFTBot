@@ -19,6 +19,7 @@ import SellFilledEventHandler from "../MarketEventHandlers/SellFilledEventHandle
 import { OrderSide, OrderTimeEffect, OrderType } from "../Models/Order";
 import Quote from "../Models/Quote";
 import Tick from "../Models/Tick";
+import OrderLogger from "../Services/OrdersLogger";
 
 export default class BittrexMarketMakerBot {
 
@@ -37,6 +38,8 @@ export default class BittrexMarketMakerBot {
     private buyFilledHandler: BuyFilledEventHandler;
     private outAskHandler: OutAskEventHandler;
     private sellFilledHandler: SellFilledEventHandler;
+
+    private orderLogger: OrderLogger;
 
     constructor(public readonly marketName: string) {
         console.log("SETTING UP EVENTS PIPELINES...");
@@ -67,6 +70,10 @@ export default class BittrexMarketMakerBot {
         this.outAskHandler = new OutAskEventHandler(this.outAskDetector, this.outAskManager);
         this.sellFilledHandler = new SellFilledEventHandler(this.openOrdersStatusDetector, this.outBidManager);
 
+        if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
+            this.orderLogger = new OrderLogger(this.openOrdersStatusDetector);
+        }
+
     }
 
     public start(): void {
@@ -85,7 +92,7 @@ export default class BittrexMarketMakerBot {
             this.tickEmitter.removeListener(this.marketName, tickListener);
 
             // Log first tick
-            console.log(`First Tick: \n${JSON.stringify(tick)}\nSpread: ${tick.spreadPercentage}`);
+            console.log(`\nFirst Tick: \n${JSON.stringify(tick)}\nSpread: ${tick.spreadPercentage}`);
 
             // Generate outBid quote
             const basecoin = this.marketName.split("-")[0];

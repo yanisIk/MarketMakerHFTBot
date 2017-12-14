@@ -1,7 +1,7 @@
 import IBroker from "../Brokers/IBroker";
 import ITickEventEmitter from "../MarketDataEventEmitters/ITickEventEmitter";
 import OutAskDetector from "../MarketEventDetectors/OutAskDetector";
-import Order, { OrderSide, OrderTimeEffect, OrderType, OrderStatus } from "../Models/Order";
+import Order, { OrderSide, OrderStatus, OrderTimeEffect, OrderType } from "../Models/Order";
 import Quote from "../Models/Quote";
 import Tick from "../Models/Tick";
 
@@ -42,7 +42,7 @@ export default class OutAskManager {
             if ((err === "ORDER_ALREADY_CLOSED") || (err.message === "ORDER_ALREADY_CLOSED")) {
                 console.log("!!! ORDER ALREADY CLOSED (Probably Filled ?) !!! \nORDERID:", order.id);
             } else {
-                console.log("!!! CANCEL FAILED IN OUTBIDEVENTHANDLER, NO RE OUTBID !!!\n ORDERID:", order.id);
+                console.log("!!! CANCEL FAILED IN OUTASKEVENTHANDLER, NO RE OUTASK !!!\n ORDERID:", order.id);
             }
         }
 

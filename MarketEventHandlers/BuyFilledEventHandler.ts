@@ -1,4 +1,3 @@
-declare const CONFIG: any;
 import IBroker from "../Brokers/IBroker";
 import OutAskManager from "../Managers/OutAskManager";
 import ITickEventEmitter from "../MarketDataEventEmitters/ITickEventEmitter";

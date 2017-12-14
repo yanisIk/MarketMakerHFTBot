@@ -1,4 +1,4 @@
-import * as CONFIG from "./../Config/CONFIG";
+const CONFIG =  require("./../Config/CONFIG");
 const Bluebird = require("bluebird");
 const bittrex = Bluebird.promisifyAll(require("node-bittrex-api"));
 bittrex.options({
@@ -13,7 +13,7 @@ const EventEmitter = require("events");
 
 let singleton = null;
 
-export default class BittrexExchangeService {
+module.exports = class BittrexExchangeService {
 
     constructor() {
         if (singleton) return singleton;

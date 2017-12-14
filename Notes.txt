@@ -21,6 +21,14 @@ risks: waiting for ask to go back up ? => not seliing
 
 TODO: Manage request timeouts for buy sell and cancel (Done but not sure if right strategy)
 
+TODO (Not really necessary): Manage partially filled orders with quantity remaining < min quantity
+      Transform them into filled orders 
+
+
+
+      TODO URGENT: Manage partial fills with small quantities (min trade requirement)
+      TODO SEMI URGENT (or will : Fix INSUFFICIENT_FUNDS (very rare, maybe due to fees not removed from quantity to resell ?)
+
 TODO: FIX: log below shows that order has been outasked,
            then already closed when trying to cancel it,
            then cancelled (???)
@@ -38,3 +46,5 @@ ORDERID: a23aecc6-3e50-4215-bb5a-34d3324ad88b
 OrderID: a23aecc6-3e50-4215-bb5a-34d3324ad88b
 Quantity Filled:0 Rate:10.66942467
 
+
+3812.2498

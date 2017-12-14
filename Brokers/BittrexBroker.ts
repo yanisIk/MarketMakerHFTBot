@@ -49,7 +49,8 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
             if (err.message === "URL request error") {
                 return this.buy(quote);
             }
-            console.error(`\n!!! Error in BittrexBroker.buy() !!!`);
+            console.error(`\n!!! Error in BittrexBroker.buy() !!!\n`);
+            console.error(quote);
             console.error(err);
         }
     }
@@ -69,7 +70,8 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
             if (err.message === "URL request error") {
                 return this.sell(quote);
             }
-            console.error(`\n!!! Error in BittrexBroker.sell() !!!`);
+            console.error(`\n!!! Error in BittrexBroker.sell() !!!\n`);
+            console.error(quote);
             console.error(err);
         }
     }
@@ -337,7 +339,8 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
             orderObject.cancel(order.Closed);
         }
         if (orderStatus !== (OrderStatus.OPEN || OrderStatus.CANCELED)) {
-            orderObject.fill(order.Quantity - order.QuantityRemaining, order.Closed);
+            const filledQuantity: number = (order.Quantity - order.QuantityRemaining);
+            orderObject.fill(filledQuantity, order.Closed);
         }
 
         return orderObject;

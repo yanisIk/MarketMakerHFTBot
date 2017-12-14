@@ -28,7 +28,7 @@ export default class OutAskDetector extends EventEmitter {
         if (OutAskDetector.monitoredOrders.size === 0) {
             return null;
         }
-        return OutAskDetector.monitoredOrders.values[0].rate;
+        return OutAskDetector.monitoredOrders.values[0] ? OutAskDetector.monitoredOrders.values[0].rate : null;
     }
 
     constructor(private broker: IBroker,

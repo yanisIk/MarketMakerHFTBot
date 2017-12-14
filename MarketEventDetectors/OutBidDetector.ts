@@ -27,7 +27,7 @@ export default class OutBidDetector extends EventEmitter {
         if (OutBidDetector.monitoredOrders.size === 0) {
             return null;
         }
-        return OutBidDetector.monitoredOrders.values[0].rate;
+        return OutBidDetector.monitoredOrders.values[0] ? OutBidDetector.monitoredOrders.values[0].rate : null;
     }
 
     constructor(private broker: IBroker,
@@ -75,6 +75,7 @@ export default class OutBidDetector extends EventEmitter {
                 this.filledOrdersEmitter.PARTIALLY_FILLED_BUY_ORDER_EVENT_EMITTER.removeListener(buyOrder.id,
                     partiallyFilledBuyOrderListener);
                 process.removeListener("SIGTERM", gracefulShutdownListener);
+                process.removeListener("SIGINT", gracefulShutdownListener);
             };
 
             // If outbid detected, emit it and remove listener
@@ -137,6 +138,7 @@ export default class OutBidDetector extends EventEmitter {
             this.filledOrdersEmitter.PARTIALLY_FILLED_BUY_ORDER_EVENT_EMITTER
                                                         .on(buyOrder.id, partiallyFilledBuyOrderListener);
             process.on("SIGTERM", gracefulShutdownListener);
+            process.on("SIGINT", gracefulShutdownListener);
         });
     }
 
