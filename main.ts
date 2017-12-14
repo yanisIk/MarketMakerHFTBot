@@ -8,7 +8,7 @@ import * as CONFIG from "./Config/CONFIG";
 import BittrexMarketMakerBot from "./Engines/BittrexMarketMakerBot";
 // import BittrexExchangeService from "./Services/BittrexExchangeService";
 
-const numWorkers: number = 1; // require('os').cpus().length;
+const numWorkers: number = 3; // require('os').cpus().length;
 // USE MULTIPLE CORES
 if (cluster.isMaster) {
 

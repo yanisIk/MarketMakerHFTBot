@@ -25,8 +25,8 @@ TODO (Not really necessary): Manage partially filled orders with quantity remain
       Transform them into filled orders 
 
 
-
-      TODO URGENT: Manage partial fills with small quantities (min trade requirement)
+      TODO URGENT: DOUBLE SPEND ? (filled order is reselled twice sometimes)
+      TODO URGENT: Manage partial fills with small quantities (min trade requirement, DONE ?)
       TODO SEMI URGENT (or will : Fix INSUFFICIENT_FUNDS (very rare, maybe due to fees not removed from quantity to resell ?)
 
 TODO: FIX: log below shows that order has been outasked,

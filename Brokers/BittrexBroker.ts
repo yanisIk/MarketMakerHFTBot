@@ -49,7 +49,7 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
             if (err.message === "URL request error") {
                 return this.buy(quote);
             }
-            console.error(`\n!!! Error in BittrexBroker.buy() !!!\n`);
+            console.error(`\n!!! Error in BittrexBroker.buy() ${new Date()}!!!\n`);
             console.error(quote);
             console.error(err);
         }
@@ -70,7 +70,7 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
             if (err.message === "URL request error") {
                 return this.sell(quote);
             }
-            console.error(`\n!!! Error in BittrexBroker.sell() !!!\n`);
+            console.error(`\n!!! Error in BittrexBroker.sell() !!! ${new Date()}\n`);
             console.error(quote);
             console.error(err);
         }
