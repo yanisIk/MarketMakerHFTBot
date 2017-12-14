@@ -1,6 +1,6 @@
 declare const CONFIG: any;
 import IBroker from "../Brokers/IBroker";
-import OutBidManager from "../Managers/OutbidManager";
+import OutBidManager from "../Managers/OutBidManager";
 import ITickEventEmitter from "../MarketDataEventEmitters/ITickEventEmitter";
 import OpenOrdersStatusDetector, { UPDATE_ORDER_STATUS_EVENTS } from "../MarketEventDetectors/OpenOrdersStatusDetector";
 import Order, { OrderSide, OrderStatus, OrderTimeEffect, OrderType } from "../Models/Order";
