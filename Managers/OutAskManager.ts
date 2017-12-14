@@ -40,7 +40,7 @@ export default class OutAskManager {
             this.tickEventEmitter.once(order.marketName, tickListener);
         } catch (err) {
             if ((err === "ORDER_ALREADY_CLOSED") || (err.message === "ORDER_ALREADY_CLOSED")) {
-                console.log("!!! ORDER ALREADY CLOSED (Probably Filled ?) !!! \nORDERID:", order.id);
+                console.log("!!! ORDER ALREADY CLOSED (Probably Filled ?) => NO RE OUTASK !!! \nORDERID:", order.id);
             } else {
                 console.log("!!! CANCEL FAILED IN OUTASKEVENTHANDLER, NO RE OUTASK !!!\n ORDERID:", order.id);
             }

@@ -12,7 +12,7 @@ const bittrex = Bluebird.promisifyAll(bittrexClient);
 bittrex.options({
     apikey : process.env.BITTREX_API_KEY,
     apisecret : process.env.BITTREX_API_SECRET,
-    verbose : false,
+    verbose : CONFIG.GLOBAL.VERBOSE_CLIENT,
     inverse_callback_arguments : true,
 });
 

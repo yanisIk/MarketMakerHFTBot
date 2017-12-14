@@ -28,7 +28,7 @@ export default class OutBidManager {
 
         let tickListener: TickListener;
         tickListener = (tick: Tick): void => {
-            // Do not buy if spread < 0.8
+            // // Do not buy if spread < 0.8
             const spreadPercentage = tick.spreadPercentage;
             if (spreadPercentage < CONFIG.BITTREX.MIN_SPREAD_PERCENTAGE) {
                 return;

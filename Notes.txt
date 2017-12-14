@@ -24,8 +24,8 @@ TODO: Manage request timeouts for buy sell and cancel (Done but not sure if righ
 TODO (Not really necessary): Manage partially filled orders with quantity remaining < min quantity
       Transform them into filled orders 
 
-
-      TODO URGENT: DOUBLE SPEND ? (filled order is reselled twice sometimes)
+      TODO URGENT: FIX MEMORY LEAK (look at all listeners and if they are cleaned)
+      TODO URGENT: DOUBLE SPEND ? (filled order is reselled twice sometimes, maybe only in super low interval because of the retry)
       TODO URGENT: Manage partial fills with small quantities (min trade requirement, DONE ?)
       TODO SEMI URGENT (or will : Fix INSUFFICIENT_FUNDS (very rare, maybe due to fees not removed from quantity to resell ?)
 
