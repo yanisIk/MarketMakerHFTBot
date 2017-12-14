@@ -163,12 +163,12 @@ export default class OpenOrdersStatusDetector extends EventEmitter {
             updatedOrder.partialFill = updatedOrder.quantityFilled - lastPartialOrder.quantityFilled;
         }
 
-        this.lastPartialOrders.set(updatedOrder.id, updatedOrder);
-
         // If quantity filled too small, do not emit
         if (updatedOrder.partialFill < CONFIG.BITTREX.MIN_QTY_TO_TRADE[updatedOrder.marketName] * 12) {
             return;
         }
+
+        this.lastPartialOrders.set(updatedOrder.id, updatedOrder);
 
         if (updatedOrder.side === OrderSide.BUY) {
             this.FILLED_BUY_ORDER_EVENT_EMITTER.emit(updatedOrder.id, updatedOrder);
