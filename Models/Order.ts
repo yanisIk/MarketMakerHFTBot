@@ -33,7 +33,8 @@ export default class Order extends Quote {
     }
 
     public set partialFill(partialFill: number) {
-        this.partialFilledQuantity = partialFill - ( partialFill * (CONFIG.BITTREX.TRANSACTION_FEE_PERCENTAGE) / 100 );
+        this.partialFilledQuantity = partialFill -
+                                    ( partialFill *  ((CONFIG.BITTREX.TRANSACTION_FEE_PERCENTAGE) / 100) );
     }
 
     public get partialFill() {
@@ -56,7 +57,7 @@ export default class Order extends Quote {
 
         // Remove fees from quantity filled
         this.quantityFilled = this.quantityFilled -
-                            ( this.quantityFilled * (CONFIG.BITTREX.TRANSACTION_FEE_PERCENTAGE) / 100 );
+                            ( this.quantityFilled * ((CONFIG.BITTREX.TRANSACTION_FEE_PERCENTAGE) / 100) );
     }
 
     public cancel(closedTimestamp: number | Date): void {
