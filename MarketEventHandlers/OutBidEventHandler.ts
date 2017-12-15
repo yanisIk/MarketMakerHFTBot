@@ -25,7 +25,7 @@ export default class OutBidEventHandler {
     }
 
     private startMonitoring(): void {
-        this.outBidDetector.on(OutBidDetector.OUTBID_ORDER_EVENT, async (buyOrder: Order) => {
+        this.outBidDetector.on(OutBidDetector.OUTBID_ORDER_EVENT, (buyOrder: Order) => {
 
             this.outBidManager.outBid(buyOrder);
 

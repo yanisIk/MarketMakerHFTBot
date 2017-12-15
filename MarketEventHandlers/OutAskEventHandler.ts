@@ -25,7 +25,7 @@ export default class OutAskEventHandler {
     }
 
     private startMonitoring(): void {
-        this.outAskDetector.on(OutAskDetector.OUTASK_ORDER_EVENT, async (sellOrder: Order) => {
+        this.outAskDetector.on(OutAskDetector.OUTASK_ORDER_EVENT, (sellOrder: Order) => {
 
             this.outAskManager.outAsk(sellOrder);
 

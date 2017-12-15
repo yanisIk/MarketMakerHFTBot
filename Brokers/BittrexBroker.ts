@@ -47,6 +47,8 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
         } catch (err) {
             // Retry if Request Error due to network
             if (err.message === "URL request error") {
+                console.log("\nFailed Buy: Retrying\n");
+                console.log(quote);
                 return this.buy(quote);
             }
             console.error(`\n!!! Error in BittrexBroker.buy() ${new Date()}!!!\n`);
@@ -68,6 +70,8 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
         } catch (err) {
             // Retry if Request Error due to network
             if (err.message === "URL request error") {
+                console.log("\nFailed Buy: Retrying\n");
+                console.log(quote);
                 return this.sell(quote);
             }
             console.error(`\n!!! Error in BittrexBroker.sell() !!! ${new Date()}\n`);
