@@ -81,7 +81,7 @@ export default class OutAskDetector extends EventEmitter {
 
             // If outask detected, emit it and remove listener
             let lastBid: number;
-            let numberOfHigherBid: number = 0;
+            let numberOfHigherBids: number = 0;
             tickListener = (tick: Tick) =>  {
                 if (tick.ask < sellOrder.rate) {
                     cleanListeners();
@@ -89,8 +89,8 @@ export default class OutAskDetector extends EventEmitter {
                     OutAskDetector.monitoredOrders.delete(sellOrder.id);
                     this.emit(OutAskDetector.OUTASK_ORDER_EVENT, sellOrder);
                 } else if (lastBid && lastBid > tick.bid) {
-                    numberOfHigherBid++;
-                    if (numberOfHigherBid === 5) {
+                    numberOfHigherBids++;
+                    if (numberOfHigherBids === 5) {
                         cleanListeners();
                         // Remove from monitored buyOrders
                         OutAskDetector.monitoredOrders.delete(sellOrder.id);

@@ -128,7 +128,9 @@ export default class OutBidDetector extends EventEmitter {
                 cleanListeners();
                 // Cancel order
                 this.broker.cancelOrder(buyOrder.id);
-                console.log(`GRACEFUL SHUTDOWN: CANCELING OPEN BUY ORDER ${buyOrder.id}`);
+                console.log(`!!! GRACEFUL SHUTDOWN: CANCELING OPEN BUY ORDER: !!!`);
+                console.log(`\n---  [${buyOrder.marketName}] --- \nOrderID: ${buyOrder.id}\n` +
+                `Quantity:${buyOrder.quantity} @ Rate:${buyOrder.rate}\n`);
             };
 
             // Begin to listen
@@ -145,7 +147,7 @@ export default class OutBidDetector extends EventEmitter {
     private logEvents(): void {
         if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
             this.on(OutBidDetector.OUTBID_ORDER_EVENT, (order: Order) => {
-                console.log(`\n--- OUTBIDED ORDER --- \nOrderID: ${order.id}\n` +
+                console.log(`\n--- OUTBIDED ORDER [${order.marketName}] --- \nOrderID: ${order.id}\n` +
                                 `Quantity:${order.quantity} @ Rate:${order.rate}\n`);
             });
         }

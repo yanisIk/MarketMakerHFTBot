@@ -1,6 +1,7 @@
 import IBroker from "../Brokers/IBroker";
 import * as CONFIG from "../Config/CONFIG";
 import ITickEventEmitter from "../MarketDataEventEmitters/ITickEventEmitter";
+import OpenOrdersStatusDetector, { UPDATE_ORDER_STATUS_EVENTS } from "../MarketEventDetectors/OpenOrdersStatusDetector";
 import OutBidDetector from "../MarketEventDetectors/OutBidDetector";
 import Order, { OrderSide, OrderTimeEffect, OrderType } from "../Models/Order";
 import Quote from "../Models/Quote";
@@ -11,6 +12,7 @@ type TickListener = (tick: Tick) => void;
 export default class OutBidManager {
 
     constructor(private tickEventEmitter: ITickEventEmitter,
+                private openOrdersStatusDetector: OpenOrdersStatusDetector,
                 private broker: IBroker) {
         // EMPTY
     }
@@ -22,39 +24,51 @@ export default class OutBidManager {
      * @param order
      */
     public async outBid(order: Order): Promise<void> {
-        // Cancel order if it's BUY order
-        const cancelOrderPromise = (order.side === OrderSide.SELL) ?
-                                    Promise.resolve() : this.broker.cancelOrder(order.id);
 
         let tickListener: TickListener;
-        tickListener = (tick: Tick): void => {
-            // // Do not buy if spread < 0.8
-            const spreadPercentage = tick.spreadPercentage;
-            if (spreadPercentage < CONFIG.BITTREX.MIN_SPREAD_PERCENTAGE) {
-                return;
-            }
+        tickListener = async (tick: Tick): Promise<void> => {
+            // // // Do not buy if spread < 0.8
+            // const spreadPercentage = tick.spreadPercentage;
+            // if (spreadPercentage < CONFIG.BITTREX.MIN_SPREAD_PERCENTAGE) {
+            //     // if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
+            //     //     console.log(`--- OUTBID SPREAD: ${spreadPercentage} % ---`);
+            //     // }
+            //     return;
+            // }
+
             // Clean listener
             this.tickEventEmitter.removeListener(order.marketName, tickListener);
+
+            // Cancel order if it's BUY order
+            const cancelOrderPromise = (order.side === OrderSide.SELL) ?
+                                        Promise.resolve() : this.broker.cancelOrder(order.id);
             // Generate outBid quote
             const outBidQuote = this.generateOutBidQuote(order, tick);
-            // Buy
-            this.broker.buy(outBidQuote);
 
-            if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
-                console.log(`--- OUTBID SPREAD: ${spreadPercentage} % ---`);
+            try {
+                await cancelOrderPromise;
+
+                if (order.side === OrderSide.SELL) {
+                    // Buy
+                    this.broker.buy(outBidQuote);
+                    return;
+                }
+                // Rebuy only when it's really canceled
+                this.openOrdersStatusDetector.CANCELED_BUY_ORDER_EVENT_EMITTER.once(order.id, () => {
+                    // Buy
+                    this.broker.buy(outBidQuote);
+                });
+            } catch (err) {
+                if ((err === "ORDER_ALREADY_CLOSED") || (err.message === "ORDER_ALREADY_CLOSED")) {
+                    console.log(`!!! [${order.marketName}] ORDER ALREADY CLOSED (Probably Filled ?) =>` +
+                                ` NO RE OUTBID !!! \nORDERID: ${order.id}`);
+                } else {
+                    console.log("!!! CANCEL FAILED IN OUTBIDEVENTHANDLER, NO RE OUTBID !!!\nORDERID:", order.id);
+                }
             }
         };
 
-        try {
-            await cancelOrderPromise;
-            this.tickEventEmitter.on(order.marketName, tickListener);
-        } catch (err) {
-            if ((err === "ORDER_ALREADY_CLOSED") || (err.message === "ORDER_ALREADY_CLOSED")) {
-                console.log("!!! ORDER ALREADY CLOSED (Probably Filled ?) => NO RE OUTBID !!! \nORDERID:", order.id);
-            } else {
-                console.log("!!! CANCEL FAILED IN OUTBIDEVENTHANDLER, NO RE OUTBID !!!\nORDERID:", order.id);
-            }
-        }
+        this.tickEventEmitter.on(order.marketName, tickListener);
 
     }
 
@@ -65,7 +79,7 @@ export default class OutBidManager {
         if (currentBid) {
             newBid = currentBid;
         } else {
-            newBid = tick.bid + (tick.spread * 0.01);
+            newBid = tick.bid + (tick.spread * CONFIG.BITTREX.OUT_SPREAD_PERCENTAGE / 100);
         }
         let quantity: number;
         switch (order.side) {

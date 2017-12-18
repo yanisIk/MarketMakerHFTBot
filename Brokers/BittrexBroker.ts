@@ -47,7 +47,7 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
         } catch (err) {
             // Retry if Request Error due to network
             if (err.message === "URL request error") {
-                console.log("\nFailed Buy: Retrying\n");
+                console.log("\nFailed Buy (network): Retrying\n");
                 console.log(quote);
                 return this.buy(quote);
             }
@@ -70,7 +70,7 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
         } catch (err) {
             // Retry if Request Error due to network
             if (err.message === "URL request error") {
-                console.log("\nFailed Buy: Retrying\n");
+                console.log("\nFailed Sell (network): Retrying\n");
                 console.log(quote);
                 return this.sell(quote);
             }
@@ -81,8 +81,8 @@ export default class BittrexBroker extends EventEmitter implements IBroker {
     }
 
     public spamBuy(quote: Quote, tick: Tick, chunks: number = 13, delayInMs: number): void {
-        let splittedQuantity: number = CONFIG.BITTREX.MIN_QTY_TO_TRADE[quote.marketName] * 6;
-        if (quote.quantity / chunks >= CONFIG.BITTREX.MIN_QTY_TO_TRADE[quote.marketName] * 6) {
+        let splittedQuantity: number = CONFIG.BITTREX.MIN_QTY_TO_TRADE[quote.marketName] * 12;
+        if (quote.quantity / chunks >= CONFIG.BITTREX.MIN_QTY_TO_TRADE[quote.marketName] * 12) {
             splittedQuantity = quote.quantity / chunks;
         }
         const startBid = tick.bid - (tick.spread / 3);

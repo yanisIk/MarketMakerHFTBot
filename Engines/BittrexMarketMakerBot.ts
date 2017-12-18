@@ -57,22 +57,20 @@ export default class BittrexMarketMakerBot {
         this.tickEmitter = new BittrexTickEventEmitter();
         this.tickEmitter.subscribe(this.marketName);
 
-        this.outBidManager = new OutBidManager(this.tickEmitter, this.broker);
-        this.outAskManager = new OutAskManager(this.tickEmitter, this.broker);
-
         this.openOrdersStatusDetector = new OpenOrdersStatusDetector(this.broker,
                                         CONFIG.BITTREX.ORDER_WATCH_INTERVAL_IN_MS);
         this.outBidDetector = new OutBidDetector(this.broker, this.openOrdersStatusDetector, this.tickEmitter);
         this.outAskDetector = new OutAskDetector(this.broker, this.openOrdersStatusDetector, this.tickEmitter);
+
+        this.outBidManager = new OutBidManager(this.tickEmitter, this.openOrdersStatusDetector, this.broker);
+        this.outAskManager = new OutAskManager(this.tickEmitter, this.openOrdersStatusDetector, this.broker);
 
         this.outBidHandler = new OutBidEventHandler(this.outBidDetector, this.outBidManager);
         this.buyFilledHandler = new BuyFilledEventHandler(this.openOrdersStatusDetector, this.outAskManager);
         this.outAskHandler = new OutAskEventHandler(this.outAskDetector, this.outAskManager);
         this.sellFilledHandler = new SellFilledEventHandler(this.openOrdersStatusDetector, this.outBidManager);
 
-        if (CONFIG.GLOBAL.IS_LOG_ACTIVE) {
-            this.orderLogger = new OrderLogger(this.openOrdersStatusDetector);
-        }
+        this.orderLogger = new OrderLogger(this.openOrdersStatusDetector);
 
     }
 
@@ -85,33 +83,41 @@ export default class BittrexMarketMakerBot {
         // const testOrderId = "78bdcf01-ef7a-4727-be10-b953b24020af";
         // this.broker.emit(OPEN_ORDER_EVENTS.OPEN_BUY_ORDER_EVENT, {id: testOrderId});
 
+        // Generate outBid quote
+        const basecoin = this.marketName.split("-")[0];
+        let MIN_QUANTITY: number = 0;
+        switch (basecoin) {
+            case "BTC" : {
+                MIN_QUANTITY = CONFIG.BITTREX.START_BTC_QUANTITY;
+                break;
+            }
+            case "ETH" : {
+                MIN_QUANTITY = CONFIG.BITTREX.START_ETH_QUANTITY;
+                break;
+            }
+            case "USDT" : {
+                MIN_QUANTITY = CONFIG.BITTREX.START_USDT_QUANTITY;
+                break;
+            }
+        }
+
         // 1st outbid
         let tickListener: (tick: Tick) => void;
         tickListener = (tick: Tick): void => {
+
+            // // // Do not buy if spread < 0.8
+            // const spreadPercentage = tick.spreadPercentage;
+            // if (spreadPercentage < CONFIG.BITTREX.MIN_SPREAD_PERCENTAGE) {
+            //     return;
+            // }
+
             // Clean listener
             this.tickEmitter.removeListener(this.marketName, tickListener);
 
             // Log first tick
             console.log(`\nFirst Tick: \n${JSON.stringify(tick)}\nSpread: ${tick.spreadPercentage}`);
 
-            // Generate outBid quote
-            const basecoin = this.marketName.split("-")[0];
-            let MIN_QUANTITY: number = 0;
-            switch (basecoin) {
-                case "BTC" : {
-                    MIN_QUANTITY = CONFIG.BITTREX.START_BTC_QUANTITY;
-                    break;
-                }
-                case "ETH" : {
-                    MIN_QUANTITY = CONFIG.BITTREX.START_ETH_QUANTITY;
-                    break;
-                }
-                case "USDT" : {
-                    MIN_QUANTITY = CONFIG.BITTREX.START_USDT_QUANTITY;
-                    break;
-                }
-            }
-            const newBid: number = tick.bid + (tick.spread * 0.01);
+            const newBid: number = tick.bid + (tick.spread * CONFIG.BITTREX.OUT_SPREAD_PERCENTAGE / 100);
             const startQuantity = MIN_QUANTITY / newBid;
             const outBidQuote = new Quote(this.marketName, newBid, startQuantity,
                                         OrderSide.BUY, OrderType.LIMIT, OrderTimeEffect.GOOD_UNTIL_CANCELED);

@@ -8,7 +8,7 @@ import * as CONFIG from "./Config/CONFIG";
 import BittrexMarketMakerBot from "./Engines/BittrexMarketMakerBot";
 // import BittrexExchangeService from "./Services/BittrexExchangeService";
 
-const numWorkers: number = 3; // require('os').cpus().length;
+const numWorkers: number = 1; // require('os').cpus().length;
 // USE MULTIPLE CORES
 if (cluster.isMaster) {
 
@@ -48,8 +48,9 @@ if (cluster.isMaster) {
     prepareWorkers();
 
 } else {
-    process.on("message", async (data) => {
+    process.on("message", (data) => {
         global.WORKER_ID = data.workerId;
+        global.MARKET_NAME = data.marketName;
         global.CONFIG = CONFIG;
 
         console.log(`WORKER#${data.workerId} MONITORING ${data.marketName}`);
