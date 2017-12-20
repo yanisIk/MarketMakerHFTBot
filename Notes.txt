@@ -37,3 +37,6 @@ OrderID: 95fb4df3-3e60-4ca8-a78f-1bd235e72955
 TODO: Manage request timeouts for buy sell and cancel (Done but not sure if right strategy)
 
 
+(97 * 0.1 + 96 * 0.2 + 95 * 6) + (98 * 4 + 99 * 4.6 + 100 * 4.9) 
+/
+(0.1 + 4  +  0.2 + 4.6  +  6 + 4.9)
