@@ -22,3 +22,7 @@ export default interface ITickEventEmitter extends EventEmitter {
      */
     unsubscribe(marketName: string): void;
 }
+
+/**
+ * TICKER (Live price ticker of your "Favorite" markets as chosen on Coinigy.com)
+ */

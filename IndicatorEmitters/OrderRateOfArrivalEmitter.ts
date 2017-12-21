@@ -1,3 +1,6 @@
+import { EventEmitter } from "events";
+import IOrderEventEmitter from "../MarketDataEventEmitters/IOrderBookEventEmitter";
+
 // BuyOrdersWindow
 // SellOrdersWindow
 // FilledOrdersWindow
@@ -13,3 +16,23 @@
  * - Use count in window (will count orders in the window and emit the number of orders every X seconds)
  * - 
  */
+
+export default class OrderRatesOfArrivalEmitter extends EventEmitter {
+
+    public readonly asks: Array<{quantity: number, rate: number}> = [];
+    public readonly bids: Array<{quantity: number, rate: number}> = [];
+    public readonly fills: Array<{quantity: number, rate: number}> = [];
+    public readonly cancels: Array<{quantity: number, rate: number}> = [];
+
+    constructor(private orderBookEventEmitter: IOrderBookEventEmitter) {
+        super();
+        // Subscribe to order book
+        this.monitorOrderBook();
+    }
+
+    private monitorOrderBook(): void {
+        this.orderEventEmitter.on("ORDER_BOOK", (book) => {
+
+        })
+    }
+}
